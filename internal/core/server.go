@@ -9,6 +9,7 @@ import (
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/yomorun/yomo/internal/frame"
+	"github.com/yomorun/yomo/internal/transport"
 	"github.com/yomorun/yomo/pkg/logger"
 	// "github.com/yomorun/yomo/pkg/tracing"
 )
@@ -21,6 +22,7 @@ type Server struct {
 	funcs              *ConcurrentMap
 	counterOfDataFrame int64
 	downstreams        map[string]*Client
+	listener           transport.Listener
 }
 
 // NewServer create a Server instance.
@@ -35,6 +37,20 @@ func NewServer(name string) *Server {
 	})
 
 	return s
+}
+
+// TODO:
+func (s *Server) Serve(ctx context.Context, listener transport.Listener) error {
+	// for {
+	// 	session, err := listener.Accept(ctx)
+	// 	if err != nil {
+	// 		logger.Errorf("%screate session error: %v", ServerLogPrefix, err)
+	// 		return err
+	// 	}
+	// 	go handleSession(session)
+
+	// }
+	return nil
 }
 
 // ListenAndServe starts the server.
@@ -79,29 +95,30 @@ func (s *Server) ListenAndServe(ctx context.Context, endpoint string) error {
 			return err
 		}
 
-		connID := getConnID(session)
-		logger.Infof("%s❤️1/ new connection: %s", ServerLogPrefix, connID)
+		// connID := getConnID(session)
+		// logger.Infof("%s❤️1/ new connection: %s", ServerLogPrefix, connID)
 
-		go func(ctx context.Context, sess quic.Session) {
-			for {
-				logger.Infof("%s❤️2/ waiting for new stream", ServerLogPrefix)
-				stream, err := sess.AcceptStream(ctx)
-				if err != nil {
-					// if client close the connection, then we should close the session
-					logger.Errorf("%s❤️3/ %T on [stream] %v, deleting from s.funcs if this stream is [sfn]", ServerLogPrefix, err, err)
-					if name, ok := s.funcs.GetSfn(connID); ok {
-						s.funcs.Remove(name, connID)
-						logger.Debugf("%s sfn=%s removed", ServerLogPrefix, name)
-					}
-					break
-				}
-				defer stream.Close()
-				logger.Infof("%s❤️4/ [stream:%d] created, connID=%s", ServerLogPrefix, stream.StreamID(), connID)
-				// process frames on stream
-				s.handleSession(session, stream)
-				logger.Infof("%s❤️5/ [stream:%d] handleSession DONE", ServerLogPrefix, stream.StreamID())
-			}
-		}(sctx, session)
+		go s.handleSession(sctx, session)
+		// go func(ctx context.Context, sess quic.Session) {
+		// 	for {
+		// 		logger.Infof("%s❤️2/ waiting for new stream", ServerLogPrefix)
+		// 		stream, err := sess.AcceptStream(ctx)
+		// 		if err != nil {
+		// 			// if client close the connection, then we should close the session
+		// 			logger.Errorf("%s❤️3/ %T on [stream] %v, deleting from s.funcs if this stream is [sfn]", ServerLogPrefix, err, err)
+		// 			if name, ok := s.funcs.GetSfn(connID); ok {
+		// 				s.funcs.Remove(name, connID)
+		// 				logger.Debugf("%s sfn=%s removed", ServerLogPrefix, name)
+		// 			}
+		// 			break
+		// 		}
+		// 		defer stream.Close()
+		// 		logger.Infof("%s❤️4/ [stream:%d] created, connID=%s", ServerLogPrefix, stream.StreamID(), connID)
+		// 		// process frames on stream
+		// 		s.handleSession(session, stream)
+		// 		logger.Infof("%s❤️5/ [stream:%d] handleSession DONE", ServerLogPrefix, stream.StreamID())
+		// 	}
+		// }(sctx, session)
 	}
 }
 
@@ -117,10 +134,30 @@ func (s *Server) Close() error {
 }
 
 // handle streams on a session
-func (s *Server) handleSession(session quic.Session, mainStream quic.Stream) {
-	fs := NewFrameStream(mainStream)
+func (s *Server) handleSession(ctx context.Context, session quic.Session) {
+	// func (s *Server) handleSession(session quic.Session, mainStream quic.Stream) {
 	// check update for stream
 	for {
+		connID := getConnID(session)
+		logger.Infof("%s❤️1/ new connection: %s", ServerLogPrefix, connID)
+		logger.Infof("%s❤️2/ waiting for new stream", ServerLogPrefix)
+		mainStream, err := session.AcceptStream(ctx)
+		if err != nil {
+			// if client close the connection, then we should close the session
+			logger.Errorf("%s❤️3/ %T on [stream] %v, deleting from s.funcs if this stream is [sfn]", ServerLogPrefix, err, err)
+			if name, ok := s.funcs.GetSfn(connID); ok {
+				s.funcs.Remove(name, connID)
+				logger.Debugf("%s sfn=%s removed", ServerLogPrefix, name)
+			}
+			break
+		}
+		// defer stream.Close()
+		logger.Infof("%s❤️4/ [stream:%d] created, connID=%s", ServerLogPrefix, mainStream.StreamID(), connID)
+		// process frames on stream
+		// s.handleSession(session, stream)
+
+		// logger.Infof("%s❤️5/ [stream:%d] handleSession DONE", ServerLogPrefix, stream.StreamID())
+		fs := NewFrameStream(mainStream)
 		logger.Debugf("%shandleSession 💚 waiting read next...", ServerLogPrefix)
 		f, err := fs.ReadFrame()
 		if err != nil {
