@@ -5,14 +5,14 @@ import (
 	"errors"
 	"net"
 	"sync/atomic"
-	"time"
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/yomorun/yomo/internal/frame"
-	"github.com/yomorun/yomo/internal/transport"
 	"github.com/yomorun/yomo/pkg/logger"
 	// "github.com/yomorun/yomo/pkg/tracing"
 )
+
+type ServerOption func(*ServerOptions)
 
 // Server is the underlining server of Zipper
 type Server struct {
@@ -22,7 +22,8 @@ type Server struct {
 	funcs              *ConcurrentMap
 	counterOfDataFrame int64
 	downstreams        map[string]*Client
-	listener           transport.Listener
+	// sync.RWMutex
+	opts ServerOptions
 }
 
 // NewServer create a Server instance.
@@ -39,48 +40,21 @@ func NewServer(name string) *Server {
 	return s
 }
 
-// TODO:
-func (s *Server) Serve(ctx context.Context, listener transport.Listener) error {
-	// for {
-	// 	session, err := listener.Accept(ctx)
-	// 	if err != nil {
-	// 		logger.Errorf("%screate session error: %v", ServerLogPrefix, err)
-	// 		return err
-	// 	}
-	// 	go handleSession(session)
-
-	// }
+func (s *Server) Init(opts ...ServerOption) error {
+	for _, o := range opts {
+		o(&s.opts)
+	}
 	return nil
 }
 
-// ListenAndServe starts the server.
-func (s *Server) ListenAndServe(ctx context.Context, endpoint string) error {
-	qconf := &quic.Config{
-		Versions:                       []quic.VersionNumber{quic.Version1, quic.VersionDraft29},
-		MaxIdleTimeout:                 time.Second * 3,
-		KeepAlive:                      true,
-		MaxIncomingStreams:             10000,
-		MaxIncomingUniStreams:          10000,
-		HandshakeIdleTimeout:           time.Second * 3,
-		InitialStreamReceiveWindow:     1024 * 1024 * 2,
-		InitialConnectionReceiveWindow: 1024 * 1024 * 2,
-		DisablePathMTUDiscovery:        true,
-		// Tracer:                         getQlogConfig("server"),
-	}
-
-	// if os.Getenv("YOMO_QLOG") != "" {
-	// 	s.logger.Debugf("YOMO_QLOG=%s", os.Getenv("YOMO_QLOG"))
-	// 	qconf.Tracer = getQlogConfig("server")
-	// }
-
-	// listen the address
-	listener, err := quic.ListenAddr(endpoint, generateTLSConfig(endpoint), qconf)
+func (s *Server) ListenAndServe(ctx context.Context, addr string) error {
+	listener := s.opts.Listener
+	err := listener.Listen(ctx, addr)
 	if err != nil {
-		logger.Errorf("%squic.ListenAddr on: %s, err=%v", ServerLogPrefix, endpoint, err)
+		logger.Errorf("%squic.ListenAddr on: %s, err=%v", ServerLogPrefix, addr, err)
 		return err
 	}
-	defer listener.Close()
-	logger.Printf("%s✅ (name:%s) Listening on: %s, QUIC: %v", ServerLogPrefix, s.token, listener.Addr(), qconf.Versions)
+	logger.Printf("%s✅ (name:%s) Listening on: %s, QUIC: %v", ServerLogPrefix, s.token, listener.Addr(), listener.Versions())
 
 	s.state = ConnStateConnected
 	for {
@@ -99,28 +73,53 @@ func (s *Server) ListenAndServe(ctx context.Context, endpoint string) error {
 		// logger.Infof("%s❤️1/ new connection: %s", ServerLogPrefix, connID)
 
 		go s.handleSession(sctx, session)
-		// go func(ctx context.Context, sess quic.Session) {
-		// 	for {
-		// 		logger.Infof("%s❤️2/ waiting for new stream", ServerLogPrefix)
-		// 		stream, err := sess.AcceptStream(ctx)
-		// 		if err != nil {
-		// 			// if client close the connection, then we should close the session
-		// 			logger.Errorf("%s❤️3/ %T on [stream] %v, deleting from s.funcs if this stream is [sfn]", ServerLogPrefix, err, err)
-		// 			if name, ok := s.funcs.GetSfn(connID); ok {
-		// 				s.funcs.Remove(name, connID)
-		// 				logger.Debugf("%s sfn=%s removed", ServerLogPrefix, name)
-		// 			}
-		// 			break
-		// 		}
-		// 		defer stream.Close()
-		// 		logger.Infof("%s❤️4/ [stream:%d] created, connID=%s", ServerLogPrefix, stream.StreamID(), connID)
-		// 		// process frames on stream
-		// 		s.handleSession(session, stream)
-		// 		logger.Infof("%s❤️5/ [stream:%d] handleSession DONE", ServerLogPrefix, stream.StreamID())
-		// 	}
-		// }(sctx, session)
 	}
+	return nil
 }
+
+// // ListenAndServe starts the server.
+// func (s *Server) ListenAndServe(ctx context.Context, endpoint string) error {
+// 	logger.Printf("%s✅ (name:%s) Listening on: %s, QUIC: %v", ServerLogPrefix, s.token, s.listener.Addr(), qconf.Versions)
+
+// 	s.state = ConnStateConnected
+// 	for {
+// 		// create a new session when new yomo-client connected
+// 		sctx, cancel := context.WithCancel(ctx)
+// 		defer cancel()
+
+// 		session, err := listener.Accept(sctx)
+// 		if err != nil {
+// 			logger.Errorf("%screate session error: %v", ServerLogPrefix, err)
+// 			sctx.Done()
+// 			return err
+// 		}
+
+// 		// connID := getConnID(session)
+// 		// logger.Infof("%s❤️1/ new connection: %s", ServerLogPrefix, connID)
+
+// 		go s.handleSession(sctx, session)
+// 		// go func(ctx context.Context, sess quic.Session) {
+// 		// 	for {
+// 		// 		logger.Infof("%s❤️2/ waiting for new stream", ServerLogPrefix)
+// 		// 		stream, err := sess.AcceptStream(ctx)
+// 		// 		if err != nil {
+// 		// 			// if client close the connection, then we should close the session
+// 		// 			logger.Errorf("%s❤️3/ %T on [stream] %v, deleting from s.funcs if this stream is [sfn]", ServerLogPrefix, err, err)
+// 		// 			if name, ok := s.funcs.GetSfn(connID); ok {
+// 		// 				s.funcs.Remove(name, connID)
+// 		// 				logger.Debugf("%s sfn=%s removed", ServerLogPrefix, name)
+// 		// 			}
+// 		// 			break
+// 		// 		}
+// 		// 		defer stream.Close()
+// 		// 		logger.Infof("%s❤️4/ [stream:%d] created, connID=%s", ServerLogPrefix, stream.StreamID(), connID)
+// 		// 		// process frames on stream
+// 		// 		s.handleSession(session, stream)
+// 		// 		logger.Infof("%s❤️5/ [stream:%d] handleSession DONE", ServerLogPrefix, stream.StreamID())
+// 		// 	}
+// 		// }(sctx, session)
+// 	}
+// }
 
 // Close will shutdown the server.
 func (s *Server) Close() error {
@@ -134,9 +133,9 @@ func (s *Server) Close() error {
 }
 
 // handle streams on a session
-func (s *Server) handleSession(ctx context.Context, session quic.Session) {
+func (s *Server) handleSession(ctx context.Context, session Session) {
 	// func (s *Server) handleSession(session quic.Session, mainStream quic.Stream) {
-	// check update for stream
+	// accept stream
 	for {
 		connID := getConnID(session)
 		logger.Infof("%s❤️1/ new connection: %s", ServerLogPrefix, connID)
@@ -155,46 +154,48 @@ func (s *Server) handleSession(ctx context.Context, session quic.Session) {
 		logger.Infof("%s❤️4/ [stream:%d] created, connID=%s", ServerLogPrefix, mainStream.StreamID(), connID)
 		// process frames on stream
 		// s.handleSession(session, stream)
-
-		// logger.Infof("%s❤️5/ [stream:%d] handleSession DONE", ServerLogPrefix, stream.StreamID())
-		fs := NewFrameStream(mainStream)
-		logger.Debugf("%shandleSession 💚 waiting read next...", ServerLogPrefix)
-		f, err := fs.ReadFrame()
-		if err != nil {
-			logger.Errorf("%s%T %v", ServerLogPrefix, err, err)
-			if errors.Is(err, net.ErrClosed) {
-				// if client close the connection, net.ErrClosed will be raise
-				// by quic-go IdleTimeoutError after connection's KeepAlive config.
-				// logger.Infof("[ERR] on [ParseFrame] %v", net.ErrClosed)
+		// check update for stream
+		for {
+			// logger.Infof("%s❤️5/ [stream:%d] handleSession DONE", ServerLogPrefix, stream.StreamID())
+			fs := NewFrameStream(mainStream)
+			logger.Debugf("%shandleSession 💚 waiting read next...", ServerLogPrefix)
+			f, err := fs.ReadFrame()
+			if err != nil {
+				logger.Errorf("%s%T %v", ServerLogPrefix, err, err)
+				if errors.Is(err, net.ErrClosed) {
+					// if client close the connection, net.ErrClosed will be raise
+					// by quic-go IdleTimeoutError after connection's KeepAlive config.
+					// logger.Infof("[ERR] on [ParseFrame] %v", net.ErrClosed)
+					break
+				}
+				// any error occurred, we should close the session
+				// after this, session.AcceptStream() will raise the error
+				// which specific in session.CloseWithError()
+				mainStream.Close()
+				session.CloseWithError(0xCC, err.Error())
+				logger.Warnf("%ssession.Close()", ServerLogPrefix)
 				break
 			}
-			// any error occurred, we should close the session
-			// after this, session.AcceptStream() will raise the error
-			// which specific in session.CloseWithError()
-			mainStream.Close()
-			session.CloseWithError(0xCC, err.Error())
-			logger.Warnf("%ssession.Close()", ServerLogPrefix)
-			break
-		}
 
-		frameType := f.Type()
-		logger.Debugf("%stype=%s, frame=%# x", ServerLogPrefix, frameType, f.Encode())
-		switch frameType {
-		case frame.TagOfHandshakeFrame:
-			s.handleHandshakeFrame(mainStream, session, f.(*frame.HandshakeFrame))
-		// case frame.TagOfPingFrame:
-		// 	s.handlePingFrame(mainStream, session, f.(*frame.PingFrame))
-		case frame.TagOfDataFrame:
-			s.handleDataFrame(mainStream, session, f.(*frame.DataFrame))
-			s.dispatchToDownstreams(f.(*frame.DataFrame))
-		default:
-			logger.Errorf("%serr=%v, frame=%v", ServerLogPrefix, err, f.Encode())
+			frameType := f.Type()
+			logger.Debugf("%stype=%s, frame=%# x", ServerLogPrefix, frameType, f.Encode())
+			switch frameType {
+			case frame.TagOfHandshakeFrame:
+				s.handleHandshakeFrame(mainStream, session, f.(*frame.HandshakeFrame))
+			// case frame.TagOfPingFrame:
+			// 	s.handlePingFrame(mainStream, session, f.(*frame.PingFrame))
+			case frame.TagOfDataFrame:
+				s.handleDataFrame(mainStream, session, f.(*frame.DataFrame))
+				s.dispatchToDownstreams(f.(*frame.DataFrame))
+			default:
+				logger.Errorf("%serr=%v, frame=%v", ServerLogPrefix, err, f.Encode())
+			}
 		}
 	}
 }
 
 // handle HandShakeFrame
-func (s *Server) handleHandshakeFrame(stream quic.Stream, session quic.Session, f *frame.HandshakeFrame) error {
+func (s *Server) handleHandshakeFrame(stream Stream, session Session, f *frame.HandshakeFrame) error {
 	logger.Infof("%s ------> GOT ❤️ HandshakeFrame : %# x", ServerLogPrefix, f)
 	logger.Infof("%sClientType=%# x, is %s", ServerLogPrefix, f.ClientType, ClientType(f.ClientType))
 	// client type
@@ -232,7 +233,7 @@ func (s *Server) handleHandshakeFrame(stream quic.Stream, session quic.Session, 
 // 	return nil
 // }
 
-func (s *Server) handleDataFrame(mainStream quic.Stream, session quic.Session, f *frame.DataFrame) error {
+func (s *Server) handleDataFrame(mainStream Stream, session Session, f *frame.DataFrame) error {
 	// currentIssuer := f.GetIssuer()
 	currentIssuer := getConnID(session)
 
@@ -250,7 +251,7 @@ func (s *Server) handleDataFrame(mainStream quic.Stream, session quic.Session, f
 }
 
 // StatsFunctions returns the sfn stats of server.
-func (s *Server) StatsFunctions() map[string][]*quic.Stream {
+func (s *Server) StatsFunctions() map[string][]*Stream {
 	return s.funcs.GetCurrentSnapshot()
 }
 
@@ -304,6 +305,6 @@ func (s *Server) dispatchToDownstreams(df *frame.DataFrame) {
 }
 
 // getConnID get quic session connection id
-func getConnID(sess quic.Session) string {
+func getConnID(sess Session) string {
 	return sess.RemoteAddr().String()
 }

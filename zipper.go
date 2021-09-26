@@ -11,6 +11,7 @@ import (
 
 	"github.com/yomorun/yomo/internal/core"
 	"github.com/yomorun/yomo/internal/util"
+	"github.com/yomorun/yomo/listener/quic"
 	"github.com/yomorun/yomo/pkg/logger"
 )
 
@@ -98,6 +99,9 @@ func NewDownstreamZipper(name string, opts ...Option) Zipper {
 func createZipperServer(name string, addr string) *zipper {
 	// create underlying QUIC server
 	srv := core.NewServer(name)
+	srv.Init(
+		core.WithListener(quic.NewListener()),
+	)
 	z := &zipper{
 		server: srv,
 		token:  name,
@@ -105,6 +109,7 @@ func createZipperServer(name string, addr string) *zipper {
 	}
 	// initialize
 	z.init()
+
 	return z
 }
 

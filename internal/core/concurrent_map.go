@@ -6,14 +6,13 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/lucas-clemente/quic-go"
 	"github.com/yomorun/yomo/internal/frame"
 	"github.com/yomorun/yomo/pkg/logger"
 )
 
 type connStream struct {
-	id     string       // connection rem_addr
-	stream *quic.Stream // quic stream
+	id     string  // connection rem_addr
+	stream *Stream // quic stream
 }
 
 // ConcurrentMap store all stream function connections.
@@ -38,7 +37,7 @@ func NewConcurrentMap() *ConcurrentMap {
 }
 
 // Set will add stream function connection to collection.
-func (cmap *ConcurrentMap) Set(token string, connID string, stream *quic.Stream) {
+func (cmap *ConcurrentMap) Set(token string, connID string, stream *Stream) {
 	cmap.l.Lock()
 	defer cmap.l.Unlock()
 	connStreams := cmap.sfnCollection[token]
@@ -49,7 +48,7 @@ func (cmap *ConcurrentMap) Set(token string, connID string, stream *quic.Stream)
 }
 
 // Get returns a quic stream which represents stream function connection.
-func (cmap *ConcurrentMap) Get(token string) *quic.Stream {
+func (cmap *ConcurrentMap) Get(token string) *Stream {
 	cmap.l.RLock()
 	defer cmap.l.RUnlock()
 	if val, ok := cmap.sfnCollection[token]; ok {
@@ -115,10 +114,10 @@ func (cmap *ConcurrentMap) Remove(key string, connIDs ...string) {
 // }
 
 // GetCurrentSnapshot returns current snapshot of stream function connections.
-func (cmap *ConcurrentMap) GetCurrentSnapshot() map[string][]*quic.Stream {
-	result := make(map[string][]*quic.Stream)
+func (cmap *ConcurrentMap) GetCurrentSnapshot() map[string][]*Stream {
+	result := make(map[string][]*Stream)
 	for key, connStreams := range cmap.sfnCollection {
-		streams := make([]*quic.Stream, 0)
+		streams := make([]*Stream, 0)
 		for _, connStream := range connStreams {
 			streams = append(streams, connStream.stream)
 		}
