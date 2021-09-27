@@ -1,7 +1,10 @@
 package yomo
 
 import (
+	"os"
+
 	"github.com/yomorun/yomo/internal/core"
+	"github.com/yomorun/yomo/transport/kcp"
 	"github.com/yomorun/yomo/transport/quic"
 )
 
@@ -47,6 +50,20 @@ func WithListener(listener core.Listener) Option {
 func WithDialer(dialer core.Dialer) Option {
 	return func(o *options) {
 		o.Dialer = dialer
+	}
+}
+
+func WithEnv() Option {
+	return func(o *options) {
+		transport := os.Getenv("YOMO_TRANSPORT")
+		switch transport {
+		case "kcp":
+			o.Dialer = kcp.NewDialer()
+			o.Listener = kcp.NewListener()
+		default:
+			o.Dialer = quic.NewDialer()
+			o.Listener = quic.NewListener()
+		}
 	}
 }
 

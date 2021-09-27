@@ -1,4 +1,4 @@
-package util
+package config
 
 import (
 	"errors"
@@ -31,7 +31,7 @@ type WorkflowConfig struct {
 }
 
 // Load the WorkflowConfig by path.
-func Load(path string) (*WorkflowConfig, error) {
+func LoadWorkflowConfig(path string) (*WorkflowConfig, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -63,20 +63,20 @@ func load(data []byte) (*WorkflowConfig, error) {
 	return config, nil
 }
 
-// ParseConfig parses the config.
-func ParseConfig(config string) (*WorkflowConfig, error) {
+// ParseWorkflowConfig parses the config.
+func ParseWorkflowConfig(config string) (*WorkflowConfig, error) {
 	if !(strings.HasSuffix(config, ".yaml") || strings.HasSuffix(config, ".yml")) {
 		return nil, errors.New(`workflow: the extension of workflow config is incorrect, it should ".yaml|.yml"`)
 	}
 
 	// parse workflow.yaml
-	wfConf, err := Load(config)
+	wfConf, err := LoadWorkflowConfig(config)
 	if err != nil {
 		return nil, err
 	}
 
 	// validate
-	err = validateConfig(wfConf)
+	err = validateWorkflowConfig(wfConf)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func ParseConfig(config string) (*WorkflowConfig, error) {
 	return wfConf, nil
 }
 
-func validateConfig(wfConf *WorkflowConfig) error {
+func validateWorkflowConfig(wfConf *WorkflowConfig) error {
 	if wfConf == nil {
 		return errors.New("conf is nil")
 	}

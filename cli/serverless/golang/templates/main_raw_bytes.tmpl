@@ -1,7 +1,7 @@
 
 // Serverless main function
 func main() {
-	sfn := yomo.NewStreamFunction("{{.Name}}", yomo.WithZipperAddr("{{.Host}}:{{.Port}}"))
+	sfn := yomo.NewStreamFunction("{{.Name}}", yomo.WithZipperAddr("{{.Host}}:{{.Port}}"), yomo.WithEnv())
 	defer sfn.Close()
 
 	// set observe DataIDs

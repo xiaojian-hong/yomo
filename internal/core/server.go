@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"net"
+	"sync"
 	"sync/atomic"
 
-	"github.com/lucas-clemente/quic-go"
 	"github.com/yomorun/yomo/internal/frame"
 	"github.com/yomorun/yomo/pkg/logger"
 	// "github.com/yomorun/yomo/pkg/tracing"
@@ -16,14 +16,14 @@ type ServerOption func(*ServerOptions)
 
 // Server is the underlining server of Zipper
 type Server struct {
-	token              string
-	stream             quic.Stream
+	token string
+	// stream             Stream
 	state              string
 	funcs              *ConcurrentMap
 	counterOfDataFrame int64
 	downstreams        map[string]*Client
-	// sync.RWMutex
-	opts ServerOptions
+	mu                 sync.Mutex
+	opts               ServerOptions
 }
 
 // NewServer create a Server instance.
@@ -52,7 +52,7 @@ func (s *Server) ListenAndServe(ctx context.Context, addr string) error {
 	listener := s.opts.Listener
 	err := listener.Listen(ctx, addr)
 	if err != nil {
-		logger.Errorf("%squic.ListenAddr on: %s, err=%v", ServerLogPrefix, addr, err)
+		logger.Errorf("%s%s.ListenAddr on: %s, err=%v", ServerLogPrefix, listener.Name(), addr, err)
 		return err
 	}
 	logger.Printf("%s✅ (name:%s) Listening on: %s, %s: %v", ServerLogPrefix, s.token, listener.Addr(), listener.Name(), listener.Versions())
@@ -124,12 +124,12 @@ func (s *Server) ListenAndServe(ctx context.Context, addr string) error {
 
 // Close will shutdown the server.
 func (s *Server) Close() error {
-	if s.stream != nil {
-		if err := s.stream.Close(); err != nil {
-			logger.Errorf("%sClose(): %v", ServerLogPrefix, err)
-			return err
-		}
-	}
+	// if s.stream != nil {
+	// 	if err := s.stream.Close(); err != nil {
+	// 		logger.Errorf("%sClose(): %v", ServerLogPrefix, err)
+	// 		return err
+	// 	}
+	// }
 	return nil
 }
 
@@ -294,7 +294,9 @@ func (s *Server) init() {
 // AddDownstreamServer add a downstream server to this server. all the DataFrames will be
 // dispatch to all the downstreams.
 func (s *Server) AddDownstreamServer(addr string, c *Client) {
+	s.mu.Lock()
 	s.downstreams[addr] = c
+	s.mu.Unlock()
 }
 
 // dispatch every DataFrames to all downstreams

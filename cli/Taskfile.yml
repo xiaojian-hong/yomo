@@ -94,6 +94,8 @@ tasks:
     cmds:
       - "./source{{exeExt}}"
     silent: false
+    env:
+      YOMO_TRANSPORT: kcp
 
   example-source-build:
     desc: build source application
@@ -110,6 +112,8 @@ tasks:
     cmds:
       - "{{.ExeDir}}/{{.ExeName}} run -n Noise -m example/go.mod example/stream-fn/app.go"
     silent: false
+    env:
+      YOMO_TRANSPORT: kcp
 
   example-stream-fn-db:
     desc: run output stream-fn-db
@@ -117,6 +121,8 @@ tasks:
     cmds:
       - "{{.ExeDir}}/{{.ExeName}} run -n MockDB -m example/go.mod example/stream-fn-db/app.go"
     silent: false
+    env:
+      YOMO_TRANSPORT: kcp
 
   version:
     desc: "print version"
@@ -154,6 +160,8 @@ tasks:
     cmds:
       - "{{.ExeDir}}/{{.ExeName}} serve -c example/mesh/us/sender.yaml -m https://mesh-config.yomo.run/api/configs"
     silent: false
+    env:
+      YOMO_TRANSPORT: kcp
 
   example-mesh-zipper-receiver-us:
     desc: "run zipper-receiver-us"
@@ -161,6 +169,8 @@ tasks:
     cmds:
       - "{{.ExeDir}}/{{.ExeName}} serve -c example/mesh/us/receiver.yaml"
     silent: false
+    env:
+      YOMO_TRANSPORT: kcp
 
   example-mesh-zipper-sender-eu:
     desc: "run zipper-sender-eu"
@@ -168,6 +178,8 @@ tasks:
     cmds:
       - "{{.ExeDir}}/{{.ExeName}} serve -c example/mesh/eu/sender.yaml -m https://mesh-config.yomo.run/api/configs"
     silent: false
+    env:
+      YOMO_TRANSPORT: kcp
 
   example-mesh-zipper-receiver-eu:
     desc: "run zipper-receiver-eu"
@@ -175,6 +187,8 @@ tasks:
     cmds:
       - "{{.ExeDir}}/{{.ExeName}} serve -c example/mesh/eu/receiver.yaml"
     silent: false
+    env:
+      YOMO_TRANSPORT: kcp
 
   example-mesh-source-us:
     desc: run source application
@@ -184,6 +198,8 @@ tasks:
       - "./source{{exeExt}}"
     env:
       PORT: 9000
+      REGION: "💖 US 💖"
+      YOMO_TRANSPORT: kcp
     silent: false
 
   example-mesh-source-eu:
@@ -194,6 +210,8 @@ tasks:
       - "./source{{exeExt}}"
     env:
       PORT: 9800
+      REGION: "💙 EU 💙"
+      YOMO_TRANSPORT: kcp
     silent: false
 
   example-mesh-source-build:
@@ -214,6 +232,7 @@ tasks:
     env:
       PORT: 9000
       REGION: "💖 US 💖"
+      YOMO_TRANSPORT: kcp
     silent: false
 
   example-mesh-stream-fn-eu:
@@ -225,6 +244,7 @@ tasks:
     env:
       PORT: 9800
       REGION: "💙 EU 💙"
+      YOMO_TRANSPORT: kcp
     silent: false
 
   example-mesh-stream-fn-build:
@@ -242,6 +262,7 @@ tasks:
       - "./stream-fn-db{{exeExt}}"
     env:
       PORT: 9001
+      YOMO_TRANSPORT: kcp
     silent: false
 
   example-mesh-stream-fn-db-eu:
@@ -252,6 +273,7 @@ tasks:
       - "./stream-fn-db{{exeExt}}"
     env:
       PORT: 9801
+      YOMO_TRANSPORT: kcp
     silent: false
 
   example-mesh-stream-fn-db-build:

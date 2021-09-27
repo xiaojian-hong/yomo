@@ -48,7 +48,7 @@ func Handler(rxstream rx.Stream) rx.Stream {
 
 func main() {
 	addr := fmt.Sprintf("%s:%d", "localhost", getPort())
-	sfn := yomo.NewStreamFunction("Noise", yomo.WithZipperAddr(addr))
+	sfn := yomo.NewStreamFunction("Noise", yomo.WithZipperAddr(addr), yomo.WithEnv())
 	defer sfn.Close()
 
 	// set observe DataIDs
@@ -61,6 +61,7 @@ func main() {
 	sfn.SetHandler(rt.RawByteHandler)
 
 	// start
+	log.Printf("yomo-source connect to %v", addr)
 	err := sfn.Connect()
 	if err != nil {
 		log.Print("❌ Connect to YoMo-Zipper failure: ", err)

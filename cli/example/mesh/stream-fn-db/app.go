@@ -36,7 +36,7 @@ func DataID() []byte {
 
 func main() {
 	addr := fmt.Sprintf("%s:%d", "localhost", getPort())
-	sfn := yomo.NewStreamFunction("MockDB", yomo.WithZipperAddr(addr))
+	sfn := yomo.NewStreamFunction("MockDB", yomo.WithZipperAddr(addr), yomo.WithEnv())
 	defer sfn.Close()
 
 	// set observe DataIDs
@@ -46,6 +46,7 @@ func main() {
 	sfn.SetHandler(Handler)
 
 	// start
+	log.Printf("yomo-source connect to %v", addr)
 	err := sfn.Connect()
 	if err != nil {
 		log.Print("❌ Connect to YoMo-Zipper failure: ", err)

@@ -2,15 +2,17 @@ package yomo
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
 
+	"github.com/yomorun/yomo/internal/config"
 	"github.com/yomorun/yomo/internal/core"
-	"github.com/yomorun/yomo/internal/util"
 	"github.com/yomorun/yomo/pkg/logger"
 )
 
@@ -25,6 +27,9 @@ const (
 type Zipper interface {
 	// ConfigWorkflow will register workflows from config files to zipper.
 	ConfigWorkflow(conf string) error
+
+	// ConfigMesh will register edge-mesh config URL
+	ConfigMesh(url string) error
 
 	// ListenAndServe start zipper as server.
 	ListenAndServe() error
@@ -58,12 +63,13 @@ var _ Zipper = &zipper{}
 // NewZipperWithOptions create a zipper instance.
 func NewZipperWithOptions(name string, opts ...Option) Zipper {
 	options := newOptions(opts...)
+	logger.Debugf("%sNewZipperWithOptions name=%s, addr=%s", zipperLogPrefix, name, options.ZipperAddr)
 	return createZipperServer(name, options)
 }
 
 // NewZipper create a zipper instance from config files.
 func NewZipper(conf string) (Zipper, error) {
-	config, err := util.ParseConfig(conf)
+	config, err := config.ParseWorkflowConfig(conf)
 	if err != nil {
 		logger.Errorf("%s[ERR] %v", zipperLogPrefix, err)
 		return nil, err
@@ -96,6 +102,7 @@ func NewDownstreamZipper(name string, opts ...Option) Zipper {
 // createZipperServer create a zipper instance as server.
 func createZipperServer(name string, options *options) *zipper {
 	// create underlying QUIC server
+	logger.Debugf("%screateZipperServer name=%s, addr=%s", zipperLogPrefix, name, options.ZipperAddr)
 	srv := core.NewServer(name, core.WithListener(options.Listener))
 	z := &zipper{
 		server: srv,
@@ -136,7 +143,7 @@ func (z *zipper) init() {
 
 // ConfigWorkflow will read workflows from config files and register them to zipper.
 func (z *zipper) ConfigWorkflow(conf string) error {
-	config, err := util.ParseConfig(conf)
+	config, err := config.ParseWorkflowConfig(conf)
 	if err != nil {
 		logger.Errorf("%s[ERR] %v", zipperLogPrefix, err)
 		return err
@@ -144,7 +151,7 @@ func (z *zipper) ConfigWorkflow(conf string) error {
 	return z.configWorkflow(config)
 }
 
-func (z *zipper) configWorkflow(config *util.WorkflowConfig) error {
+func (z *zipper) configWorkflow(config *config.WorkflowConfig) error {
 	for i, app := range config.Functions {
 		if err := z.server.AddWorkflow(core.Workflow{Seq: i, Token: app.Name}); err != nil {
 			return err
@@ -154,13 +161,52 @@ func (z *zipper) configWorkflow(config *util.WorkflowConfig) error {
 	return nil
 }
 
+func (z *zipper) ConfigMesh(url string) error {
+	if url == "" {
+		return nil
+	}
+
+	logger.Printf("%sDownloading mesh config...", zipperLogPrefix)
+	// download mesh conf
+	res, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	decoder := json.NewDecoder(res.Body)
+	var configs []config.MeshZipper
+	err = decoder.Decode(&configs)
+	if err != nil {
+		logger.Errorf("%s✅ downloaded the Mesh config with err=%v", zipperLogPrefix, err)
+		return err
+	}
+
+	logger.Printf("%s✅ Successfully downloaded the Mesh config. ", zipperLogPrefix)
+
+	if len(configs) == 0 {
+		return nil
+	}
+
+	for _, downstream := range configs {
+		if downstream.Name == z.token {
+			continue
+		}
+		addr := fmt.Sprintf("%s:%d", downstream.Host, downstream.Port)
+		z.AddDownstreamZipper(NewDownstreamZipper(downstream.Name, WithZipperAddr(addr), WithEnv()))
+	}
+
+	return nil
+}
+
 // ListenAndServe will start zipper service.
 func (z *zipper) ListenAndServe() error {
-	logger.Debugf("%sCreating Zipper Server ...", zipperLogPrefix)
+	logger.Debugf("%sListenAndServe %s", zipperLogPrefix, z.addr)
 	// check downstream zippers
 	for _, ds := range z.downstreamZippers {
 		if dsZipper, ok := ds.(*zipper); ok {
 			go func(dsZipper *zipper) {
+				logger.Debugf("%sConnect addr=%v", dsZipper.addr)
 				dsZipper.client.Connect(context.Background(), dsZipper.addr)
 				z.server.AddDownstreamServer(dsZipper.addr, dsZipper.client)
 			}(dsZipper)
