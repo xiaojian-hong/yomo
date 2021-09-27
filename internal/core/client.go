@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -16,6 +15,8 @@ import (
 	// "github.com/yomorun/yomo/pkg/tracing"
 )
 
+type ClientOption func(*ClientOptions)
+
 // ConnState describes the state of the connection.
 type ConnState = string
 
@@ -24,16 +25,17 @@ type ConnState = string
 type Client struct {
 	token      string                 // name of the client
 	clientType ClientType             // type of the connection
-	session    quic.Session           // quic session
-	stream     quic.Stream            // quic stream
+	session    Session                // session
+	stream     Stream                 // stream
 	state      ConnState              // state of the connection
 	processor  func(*frame.DataFrame) // functions to invoke when data arrived
 	addr       string                 // the address of server connected to
 	mu         sync.Mutex
+	opts       ClientOptions
 }
 
 // NewClient creates a new YoMo-Client.
-func NewClient(appName string, connType ClientType) *Client {
+func NewClient(appName string, connType ClientType, opts ...ClientOption) *Client {
 	c := &Client{
 		token:      appName,
 		clientType: connType,
@@ -42,45 +44,31 @@ func NewClient(appName string, connType ClientType) *Client {
 
 	once.Do(func() {
 		c.init()
+		c.Init(opts...)
 	})
 
 	return c
+}
+
+func (c *Client) Init(opts ...ClientOption) error {
+	for _, o := range opts {
+		o(&c.opts)
+	}
+	return nil
 }
 
 // Connect connects to YoMo-Zipper.
 func (c *Client) Connect(ctx context.Context, addr string) error {
 	c.addr = addr
 	c.state = ConnStateConnecting
-
-	// connect to quic server
-	tlsConf := &tls.Config{
-		InsecureSkipVerify: true,
-		NextProtos:         []string{"yomo"},
-		ClientSessionCache: tls.NewLRUClientSessionCache(64),
-	}
-
-	quicConf := &quic.Config{
-		Versions:                       []quic.VersionNumber{quic.Version1, quic.VersionDraft29},
-		MaxIdleTimeout:                 time.Second * 3,
-		KeepAlive:                      true,
-		MaxIncomingStreams:             10000,
-		MaxIncomingUniStreams:          10000,
-		HandshakeIdleTimeout:           time.Second * 3,
-		InitialStreamReceiveWindow:     1024 * 1024 * 2,
-		InitialConnectionReceiveWindow: 1024 * 1024 * 2,
-		TokenStore:                     quic.NewLRUTokenStore(1, 1),
-		DisablePathMTUDiscovery:        true,
-	}
-
-	// create quic connection
-	session, err := quic.DialAddr(addr, tlsConf, quicConf)
+	// session
+	session, err := c.opts.Dialer.Dial(addr)
 	if err != nil {
 		c.state = ConnStateDisconnected
 		return err
 	}
-
-	// quic stream
-	stream, err := session.OpenStreamSync(ctx)
+	// stream
+	stream, err := session.OpenStream(ctx)
 	if err != nil {
 		c.state = ConnStateDisconnected
 		return err
@@ -121,6 +109,7 @@ func (c *Client) handleFrame() {
 			defer c.setState(ConnStateDisconnected)
 
 			logger.Errorf("%shandleFrame.ReadFrame(): %T %v", ClientLogPrefix, err, err)
+			// TODO: refactor error
 			if e, ok := err.(*quic.IdleTimeoutError); ok {
 				logger.Errorf("%sconnection timeout, err=%v", ClientLogPrefix, e)
 			} else if e, ok := err.(*quic.ApplicationError); ok {
@@ -205,7 +194,7 @@ func (c *Client) WriteFrame(frm frame.Frame) error {
 	// 		defer span.End()
 	// 	}
 	// }
-	// write on QUIC stream
+	// write on stream
 	if c.stream == nil {
 		return errors.New("stream is nil")
 	}

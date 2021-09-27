@@ -27,7 +27,7 @@ type Server struct {
 }
 
 // NewServer create a Server instance.
-func NewServer(name string) *Server {
+func NewServer(name string, opts ...ServerOption) *Server {
 	s := &Server{
 		token:       name,
 		funcs:       NewConcurrentMap(),
@@ -35,6 +35,7 @@ func NewServer(name string) *Server {
 	}
 	once.Do(func() {
 		s.init()
+		s.Init(opts...)
 	})
 
 	return s
@@ -54,7 +55,7 @@ func (s *Server) ListenAndServe(ctx context.Context, addr string) error {
 		logger.Errorf("%squic.ListenAddr on: %s, err=%v", ServerLogPrefix, addr, err)
 		return err
 	}
-	logger.Printf("%s✅ (name:%s) Listening on: %s, QUIC: %v", ServerLogPrefix, s.token, listener.Addr(), listener.Versions())
+	logger.Printf("%s✅ (name:%s) Listening on: %s, %s: %v", ServerLogPrefix, s.token, listener.Addr(), listener.Name(), listener.Versions())
 
 	s.state = ConnStateConnected
 	for {

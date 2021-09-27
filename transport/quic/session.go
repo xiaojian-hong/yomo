@@ -20,6 +20,11 @@ func (s *QuicSession) AcceptStream(ctx context.Context) (core.Stream, error) {
 	return NewQuicStream(stream), err
 }
 
+func (s *QuicSession) OpenStream(ctx context.Context) (core.Stream, error) {
+	stream, err := s.Session.OpenStreamSync(ctx)
+	return NewQuicStream(stream), err
+}
+
 func (s *QuicSession) Close() error {
 	return nil
 }

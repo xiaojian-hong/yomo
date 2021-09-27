@@ -5,10 +5,14 @@ import (
 
 	"github.com/yomorun/yomo"
 	"github.com/yomorun/yomo/pkg/logger"
+	"github.com/yomorun/yomo/transport/kcp"
 )
 
 func main() {
-	zipper := yomo.NewZipperWithOptions("basic-zipper", yomo.WithZipperAddr("localhost:9000"))
+	zipper := yomo.NewZipperWithOptions("basic-zipper",
+		yomo.WithZipperAddr("localhost:9000"),
+		yomo.WithListener(kcp.NewListener()),
+	)
 	defer zipper.Close()
 
 	err := zipper.ConfigWorkflow("workflow.yaml")

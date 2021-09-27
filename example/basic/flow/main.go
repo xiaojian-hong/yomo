@@ -6,6 +6,7 @@ import (
 
 	"github.com/yomorun/yomo"
 	"github.com/yomorun/yomo/pkg/logger"
+	"github.com/yomorun/yomo/transport/kcp"
 )
 
 type noiseData struct {
@@ -15,7 +16,10 @@ type noiseData struct {
 }
 
 func main() {
-	sfn := yomo.NewStreamFunction("Noise", yomo.WithZipperAddr("localhost:9000"))
+	sfn := yomo.NewStreamFunction("Noise",
+		yomo.WithZipperAddr("localhost:9000"),
+		yomo.WithDialer(kcp.NewDialer()),
+	)
 	defer sfn.Close()
 
 	// set only monitoring data which tag=0x33

@@ -11,6 +11,8 @@ type Session interface {
 	// RemoteAddr returns the address of the peer.
 	RemoteAddr() net.Addr
 	AcceptStream(ctx context.Context) (Stream, error)
+	// OpenStream opens a new bidirectional stream.
+	OpenStream(context.Context) (Stream, error)
 	Close() error
 	CloseWithError(uint64, string) error
 }

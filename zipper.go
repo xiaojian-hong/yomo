@@ -11,7 +11,6 @@ import (
 
 	"github.com/yomorun/yomo/internal/core"
 	"github.com/yomorun/yomo/internal/util"
-	"github.com/yomorun/yomo/listener/quic"
 	"github.com/yomorun/yomo/pkg/logger"
 )
 
@@ -66,7 +65,7 @@ var _ Zipper = &zipper{}
 // NewZipperWithOptions create a zipper instance.
 func NewZipperWithOptions(name string, opts ...Option) Zipper {
 	options := newOptions(opts...)
-	return createZipperServer(name, options.ZipperAddr)
+	return createZipperServer(name, options)
 }
 
 // NewZipper create a zipper instance from config files.
@@ -79,7 +78,9 @@ func NewZipper(conf string) (Zipper, error) {
 	// listening address
 	listenAddr := fmt.Sprintf("%s:%d", config.Host, config.Port)
 
-	return createZipperServer(config.Name, listenAddr), nil
+	options := newOptions()
+	options.ZipperAddr = listenAddr
+	return createZipperServer(config.Name, options), nil
 }
 
 // NewDownstreamZipper create a zipper descriptor for downstream zipper.
@@ -96,16 +97,13 @@ func NewDownstreamZipper(name string, opts ...Option) Zipper {
 
 /*************** Server ONLY ***************/
 // createZipperServer create a zipper instance as server.
-func createZipperServer(name string, addr string) *zipper {
+func createZipperServer(name string, options *options) *zipper {
 	// create underlying QUIC server
-	srv := core.NewServer(name)
-	srv.Init(
-		core.WithListener(quic.NewListener()),
-	)
+	srv := core.NewServer(name, core.WithListener(options.Listener))
 	z := &zipper{
 		server: srv,
 		token:  name,
-		addr:   addr,
+		addr:   options.ZipperAddr,
 	}
 	// initialize
 	z.init()

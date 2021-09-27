@@ -42,7 +42,7 @@ func (l *QuicListener) Listen(ctx context.Context, addr string) error {
 }
 
 func (l *QuicListener) Name() string {
-	return "quic"
+	return "QUIC-Server"
 }
 
 func (l *QuicListener) Versions() []string {
