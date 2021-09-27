@@ -7,7 +7,7 @@ output: prefixed
 vars:
   Name: yomo
   ExeName: yomo{{exeExt}}
-  ExeDir: ./cmd/yomo 
+  ExeDir: ../cmd/yomo 
   ReleaseDir: release 
   Version: 
     sh: git describe --always --tags --dirty
@@ -80,23 +80,24 @@ tasks:
     desc: "run zipper"
     deps: [build]
     cmds:
-      - "{{.ExeDir}}/{{.ExeName}} serve -c cli/example/zipper/workflow.yaml"
+      - "{{.ExeDir}}/{{.ExeName}} serve -c example/zipper/workflow.yaml"
     silent: false
     env:
       YOMO_ENABLE_DEBUG: false
       YOMO_LOG_LEVEL: info
+      YOMO_TRANSPORT: kcp
 
   example-source:
     desc: run source application
     deps: [example-source-build]
-    dir: "cli/example/source"
+    dir: "example/source"
     cmds:
       - "./source{{exeExt}}"
     silent: false
 
   example-source-build:
     desc: build source application
-    dir: "cli/example/source"
+    dir: "example/source"
     cmds:
       - echo "source building..."
       - "go build -o source{{exeExt}} main.go"
@@ -107,14 +108,14 @@ tasks:
     desc: "run stream-fn application"
     deps: [build]
     cmds:
-      - "{{.ExeDir}}/{{.ExeName}} run -n Noise -m cli/example/go.mod cli/example/stream-fn/app.go"
+      - "{{.ExeDir}}/{{.ExeName}} run -n Noise -m example/go.mod example/stream-fn/app.go"
     silent: false
 
   example-stream-fn-db:
     desc: run output stream-fn-db
     deps: [build]
     cmds:
-      - "{{.ExeDir}}/{{.ExeName}} run -n MockDB -m cli/example/go.mod cli/example/stream-fn-db/app.go"
+      - "{{.ExeDir}}/{{.ExeName}} run -n MockDB -m example/go.mod example/stream-fn-db/app.go"
     silent: false
 
   version:
@@ -127,11 +128,11 @@ tasks:
     desc: "cli clean"
     cmds: 
       - echo 'cli cleaning...'
-      - rm -rf cli/example/source/source{{exeExt}}
-      - rm -rf cli/example/stream-fn/stream-fn{{exeExt}}
-      - rm -rf cli/example/stream-fn-db/stream-fn-db{{exeExt}}
+      - rm -rf example/source/source{{exeExt}}
+      - rm -rf example/stream-fn/stream-fn{{exeExt}}
+      - rm -rf example/stream-fn-db/stream-fn-db{{exeExt}}
       - rm -rf cmd/yomo/yomo{{exeExt}}
-      - rm -rf cli/release
+      - rm -rf release
       - echo 'cli clean.'
     silent: true
 

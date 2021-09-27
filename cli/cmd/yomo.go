@@ -18,6 +18,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/yomorun/yomo/cli/serverless"
@@ -28,10 +29,11 @@ import (
 )
 
 var (
-	config  string
-	url     string
-	opts    serverless.Options
-	verbose bool
+	config    string
+	url       string
+	opts      serverless.Options
+	verbose   bool
+	transport string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -64,6 +66,10 @@ func init() {
 	// set verbose flag
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 
+	rootCmd.PersistentFlags().StringVarP(&transport, "transport", "t", "quic", "transport protocol [quic,kcp]")
+	// transport env, don't work
+	viper.BindPFlag("transport", rootCmd.PersistentFlags().Lookup("transport"))
+
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
@@ -91,6 +97,8 @@ func initConfig() {
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
+	viper.SetEnvPrefix("YOMO")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {

@@ -23,6 +23,7 @@ import (
 	"github.com/yomorun/yomo"
 	"github.com/yomorun/yomo/cli/pkg/log"
 	"github.com/yomorun/yomo/internal/util"
+	"github.com/yomorun/yomo/transport/kcp"
 )
 
 var meshConfURL string
@@ -47,7 +48,14 @@ var serveCmd = &cobra.Command{
 		// endpoint := fmt.Sprintf("%s:%d", conf.Host, conf.Port)
 
 		log.InfoStatusEvent(os.Stdout, "Running YoMo-Zipper...")
-		zipper := yomo.NewZipperWithOptions(conf.Name)
+		opts := make([]yomo.Option, 0)
+		if et := os.Getenv("YOMO_TRANSPORT"); et != "" {
+			transport = et
+		}
+		if transport == "kcp" {
+			opts = append(opts, yomo.WithListener(kcp.NewListener()))
+		}
+		zipper := yomo.NewZipperWithOptions(conf.Name, opts...)
 		zipper.ConfigWorkflow(config)
 		err = zipper.ListenAndServe()
 		if err != nil {
