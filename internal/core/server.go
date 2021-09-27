@@ -33,9 +33,9 @@ func NewServer(name string, opts ...ServerOption) *Server {
 		funcs:       NewConcurrentMap(),
 		downstreams: make(map[string]*Client),
 	}
+	s.Init(opts...)
 	once.Do(func() {
 		s.init()
-		s.Init(opts...)
 	})
 
 	return s

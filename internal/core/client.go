@@ -42,9 +42,9 @@ func NewClient(appName string, connType ClientType, opts ...ClientOption) *Clien
 		state:      ConnStateReady,
 	}
 
+	c.Init(opts...)
 	once.Do(func() {
 		c.init()
-		c.Init(opts...)
 	})
 
 	return c
@@ -61,6 +61,13 @@ func (c *Client) Init(opts ...ClientOption) error {
 func (c *Client) Connect(ctx context.Context, addr string) error {
 	c.addr = addr
 	c.state = ConnStateConnecting
+
+	// TODO: refactor this later as a Connection Manager
+	// reconnect
+	// for download zipper
+	// If you do not check for errors, the connection will be automatically reconnected
+	go c.reconnect(ctx, addr)
+
 	// session
 	session, err := c.opts.Dialer.Dial(addr)
 	if err != nil {
@@ -87,10 +94,6 @@ func (c *Client) Connect(ctx context.Context, addr string) error {
 
 	c.state = ConnStateConnected
 	logger.Printf("%s[%s] is connected to YoMo-Zipper %s", ClientLogPrefix, c.token, addr)
-
-	// TODO: refactor this later as a Connection Manager
-	// reconnect
-	go c.reconnect(ctx, addr)
 
 	return nil
 }

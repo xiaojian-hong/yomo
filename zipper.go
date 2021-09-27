@@ -40,13 +40,6 @@ type Zipper interface {
 
 	// Close will close the zipper.
 	Close() error
-
-	// ReadConfigFile(conf string) error
-	// AddWorkflow(wf ...core.Workflow) error
-	// ConfigDownstream(opts ...interface{}) error
-	// Connect() error
-	// RemoveDownstreamZipper(downstream Zipper) error
-	// ListenAddr() string
 }
 
 // zipper is the implementation of Zipper interface.
@@ -80,13 +73,17 @@ func NewZipper(conf string) (Zipper, error) {
 
 	options := newOptions()
 	options.ZipperAddr = listenAddr
-	return createZipperServer(config.Name, options), nil
+	zipper := createZipperServer(config.Name, options)
+	// zipper workflow
+	err = zipper.configWorkflow(config)
+
+	return zipper, err
 }
 
 // NewDownstreamZipper create a zipper descriptor for downstream zipper.
 func NewDownstreamZipper(name string, opts ...Option) Zipper {
 	options := newOptions(opts...)
-	client := core.NewClient(name, core.ClientTypeUpstreamZipper)
+	client := core.NewClient(name, core.ClientTypeUpstreamZipper, core.WithDialer(options.Dialer))
 
 	return &zipper{
 		token:  name,
@@ -141,8 +138,13 @@ func (z *zipper) init() {
 func (z *zipper) ConfigWorkflow(conf string) error {
 	config, err := util.ParseConfig(conf)
 	if err != nil {
+		logger.Errorf("%s[ERR] %v", zipperLogPrefix, err)
 		return err
 	}
+	return z.configWorkflow(config)
+}
+
+func (z *zipper) configWorkflow(config *util.WorkflowConfig) error {
 	for i, app := range config.Functions {
 		if err := z.server.AddWorkflow(core.Workflow{Seq: i, Token: app.Name}); err != nil {
 			return err
@@ -158,8 +160,10 @@ func (z *zipper) ListenAndServe() error {
 	// check downstream zippers
 	for _, ds := range z.downstreamZippers {
 		if dsZipper, ok := ds.(*zipper); ok {
-			dsZipper.client.Connect(context.Background(), dsZipper.addr)
-			z.server.AddDownstreamServer(dsZipper.addr, dsZipper.client)
+			go func(dsZipper *zipper) {
+				dsZipper.client.Connect(context.Background(), dsZipper.addr)
+				z.server.AddDownstreamServer(dsZipper.addr, dsZipper.client)
+			}(dsZipper)
 		}
 	}
 	return z.server.ListenAndServe(context.Background(), z.addr)
@@ -167,10 +171,10 @@ func (z *zipper) ListenAndServe() error {
 
 // AddDownstreamZipper will add downstream zipper.
 func (z *zipper) AddDownstreamZipper(downstream Zipper) error {
-	logger.Debugf("%sAddDownstreamZipper: %v", zipperLogPrefix, downstream)
+	logger.Debugf("%sAddDownstreamZipper: %+v", zipperLogPrefix, downstream)
 	z.downstreamZippers = append(z.downstreamZippers, downstream)
 	z.hasDownstreams = true
-	logger.Debugf("%scurrent downstreams: %v", zipperLogPrefix, z.downstreamZippers)
+	logger.Debugf("%scurrent downstreams: %+v", zipperLogPrefix, z.downstreamZippers)
 	return nil
 }
 

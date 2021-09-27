@@ -16,7 +16,9 @@ func main() {
 	defer zipper.Close()
 
 	// add Downstream Zipper
-	zipper.AddDownstreamZipper(yomo.NewDownstreamZipper("zipper-2", yomo.WithZipperAddr("localhost:9002")))
+	zipper.AddDownstreamZipper(
+		yomo.NewDownstreamZipper("zipper-2", yomo.WithZipperAddr("localhost:9002")),
+	)
 
 	// start zipper service
 	log.Printf("Server has started!, pid: %d", os.Getpid())
