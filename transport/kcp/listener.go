@@ -22,16 +22,21 @@ const (
 	dataShards   = 10
 	parityShards = 3
 	pass         = "yomo"
+	dscp         = 46
+	sockBuf      = 16777217 // 16M
+	streamBuf    = 2097152  // 2M
 
 	// session config
+	// mode
 	sessionNoDelay      = 1
-	sessionInterval     = 40
+	sessionInterval     = 20
 	sessionResend       = 2
 	sessionNoCongestion = 1
-	sessionMTU          = 1400
-	sessionSndWnd       = 2048
-	sessionRcvWnd       = 2048
-	sessionAckNodelay   = false
+	//
+	sessionMTU        = 1400
+	sessionSndWnd     = 2048
+	sessionRcvWnd     = 2048
+	sessionAckNodelay = false
 )
 
 type KcpListener struct {
@@ -53,6 +58,16 @@ func (l *KcpListener) Listen(ctx context.Context, addr string) error {
 	if err != nil {
 		return err
 	}
+	if err := listener.SetDSCP(dscp); err != nil {
+		return err
+	}
+	// mac isn't supported
+	// if err := listener.SetReadBuffer(sockBuf); err != nil {
+	// 	return err
+	// }
+	// if err := listener.SetWriteBuffer(sockBuf); err != nil {
+	// 	return err
+	// }
 	l.Listener = listener
 
 	return nil

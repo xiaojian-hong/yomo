@@ -27,5 +27,23 @@ func (d *KcpDialer) Dial(addr string) (core.Session, error) {
 		return nil, err
 	}
 
+	session.SetStreamMode(true)
+	session.SetWriteDelay(false)
+	session.SetNoDelay(sessionNoDelay, sessionInterval, sessionResend, sessionNoCongestion)
+	session.SetMtu(sessionMTU)
+	session.SetWindowSize(sessionSndWnd, sessionRcvWnd)
+	session.SetACKNoDelay(sessionAckNodelay)
+
+	if err := session.SetDSCP(dscp); err != nil {
+		return nil, err
+	}
+	// mac isn't supported
+	// if err := session.SetReadBuffer(sockBuf); err != nil {
+	// 	return nil, err
+	// }
+	// if err := session.SetWriteBuffer(sockBuf); err != nil {
+	// 	return nil, err
+	// }
+
 	return NewKcpSession(session), nil
 }

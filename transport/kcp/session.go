@@ -12,10 +12,9 @@ import (
 )
 
 const (
-	smuxVer          = 1
-	smuxMaxRecvBuf   = 16777217
-	smuxMaxStreamBuf = 2097152
-	smuxKeepAlive    = 10
+	smuxVer       = 2
+	smuxKeepAlive = 10
+	smuxFrameSize = 65535
 )
 
 type KcpSession struct {
@@ -26,9 +25,10 @@ func NewKcpSession(s *kcp.UDPSession) *KcpSession {
 	// stream multiplex
 	smuxConfig := smux.DefaultConfig()
 	smuxConfig.Version = smuxVer
-	smuxConfig.MaxReceiveBuffer = smuxMaxRecvBuf
-	smuxConfig.MaxStreamBuffer = smuxMaxStreamBuf
+	smuxConfig.MaxReceiveBuffer = sockBuf
+	smuxConfig.MaxStreamBuffer = streamBuf
 	smuxConfig.KeepAliveInterval = time.Duration(smuxKeepAlive) * time.Second
+	smuxConfig.MaxFrameSize = smuxFrameSize
 
 	sesssion, err := smux.Server(s, smuxConfig)
 	if err != nil {
@@ -39,9 +39,6 @@ func NewKcpSession(s *kcp.UDPSession) *KcpSession {
 }
 
 func (s *KcpSession) AcceptStream(ctx context.Context) (core.Stream, error) {
-	// stream multiplex
-
-	// stream
 	stream, err := s.Session.AcceptStream()
 	if err != nil {
 		return nil, err
