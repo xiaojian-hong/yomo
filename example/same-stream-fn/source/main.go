@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"math/rand"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/yomorun/yomo"
@@ -17,18 +19,21 @@ type noiseData struct {
 	From  string  `json:"from"`  // Source IP
 }
 
+var region = os.Getenv("REGION")
+
 func main() {
 	// connect to YoMo-Zipper.
-	source := yomo.NewSource("yomo-source", yomo.WithZipperAddr("localhost:9000"))
+	addr := fmt.Sprintf("%s:%d", "localhost", getPort())
+	source := yomo.NewSource("yomo-source", yomo.WithZipperAddr(addr), yomo.WithEnv())
+	log.Printf("yomo-source connect to %v", addr)
 	err := source.Connect()
 	if err != nil {
 		log.Printf("❌ Emit the data to YoMo-Zipper failure with err: %v", err)
 		return
 	}
-
-	source.SetDataTag(0x10)
 	defer source.Close()
 
+	source.SetDataTag(0x10)
 	// generate mock data and send it to YoMo-Zipper in every 100 ms.
 	generateAndSendData(source)
 }
@@ -39,7 +44,7 @@ func generateAndSendData(source yomo.Source) {
 		data := noiseData{
 			Noise: rand.New(rand.NewSource(time.Now().UnixNano())).Float32() * 200,
 			Time:  time.Now().UnixNano() / int64(time.Millisecond),
-			From:  "localhost",
+			From:  region,
 		}
 
 		sendingBuf, err := json.Marshal(&data)
@@ -60,4 +65,13 @@ func generateAndSendData(source yomo.Source) {
 
 		time.Sleep(300 * time.Millisecond)
 	}
+}
+
+func getPort() int {
+	port := 9000
+	if os.Getenv("PORT") != "" && os.Getenv("PORT") != "9000" {
+		port, _ = strconv.Atoi(os.Getenv("PORT"))
+	}
+
+	return port
 }

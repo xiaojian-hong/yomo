@@ -12,7 +12,7 @@ import (
 
 type connStream struct {
 	id     string  // connection rem_addr
-	stream *Stream // quic stream
+	stream *Stream // yomo stream
 }
 
 // ConcurrentMap store all stream function connections.
@@ -47,7 +47,7 @@ func (cmap *ConcurrentMap) Set(token string, connID string, stream *Stream) {
 	cmap.connSfnMap[connID] = token
 }
 
-// Get returns a quic stream which represents stream function connection.
+// Get returns a yomo stream which represents stream function connection.
 func (cmap *ConcurrentMap) Get(token string) *Stream {
 	cmap.l.RLock()
 	defer cmap.l.RUnlock()

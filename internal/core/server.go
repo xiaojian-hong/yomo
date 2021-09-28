@@ -48,6 +48,7 @@ func (s *Server) Init(opts ...ServerOption) error {
 	return nil
 }
 
+// ListenAndServe starts the server.
 func (s *Server) ListenAndServe(ctx context.Context, addr string) error {
 	listener := s.opts.Listener
 	err := listener.Listen(ctx, addr)
@@ -77,50 +78,6 @@ func (s *Server) ListenAndServe(ctx context.Context, addr string) error {
 	}
 	return nil
 }
-
-// // ListenAndServe starts the server.
-// func (s *Server) ListenAndServe(ctx context.Context, endpoint string) error {
-// 	logger.Printf("%s✅ (name:%s) Listening on: %s, QUIC: %v", ServerLogPrefix, s.token, s.listener.Addr(), qconf.Versions)
-
-// 	s.state = ConnStateConnected
-// 	for {
-// 		// create a new session when new yomo-client connected
-// 		sctx, cancel := context.WithCancel(ctx)
-// 		defer cancel()
-
-// 		session, err := listener.Accept(sctx)
-// 		if err != nil {
-// 			logger.Errorf("%screate session error: %v", ServerLogPrefix, err)
-// 			sctx.Done()
-// 			return err
-// 		}
-
-// 		// connID := getConnID(session)
-// 		// logger.Infof("%s❤️1/ new connection: %s", ServerLogPrefix, connID)
-
-// 		go s.handleSession(sctx, session)
-// 		// go func(ctx context.Context, sess quic.Session) {
-// 		// 	for {
-// 		// 		logger.Infof("%s❤️2/ waiting for new stream", ServerLogPrefix)
-// 		// 		stream, err := sess.AcceptStream(ctx)
-// 		// 		if err != nil {
-// 		// 			// if client close the connection, then we should close the session
-// 		// 			logger.Errorf("%s❤️3/ %T on [stream] %v, deleting from s.funcs if this stream is [sfn]", ServerLogPrefix, err, err)
-// 		// 			if name, ok := s.funcs.GetSfn(connID); ok {
-// 		// 				s.funcs.Remove(name, connID)
-// 		// 				logger.Debugf("%s sfn=%s removed", ServerLogPrefix, name)
-// 		// 			}
-// 		// 			break
-// 		// 		}
-// 		// 		defer stream.Close()
-// 		// 		logger.Infof("%s❤️4/ [stream:%d] created, connID=%s", ServerLogPrefix, stream.StreamID(), connID)
-// 		// 		// process frames on stream
-// 		// 		s.handleSession(session, stream)
-// 		// 		logger.Infof("%s❤️5/ [stream:%d] handleSession DONE", ServerLogPrefix, stream.StreamID())
-// 		// 	}
-// 		// }(sctx, session)
-// 	}
-// }
 
 // Close will shutdown the server.
 func (s *Server) Close() error {

@@ -28,6 +28,7 @@ type options struct {
 	ZipperAddr string // target Zipper endpoint address
 	// ZipperListenAddr     string // Zipper endpoint address
 	ZipperWorkflowConfig string // Zipper workflow file
+	MeshConfigURL        string // meshConfigURL is the URL of edge-mesh config
 	// Listener
 	Listener core.Listener
 	// Dialer
@@ -38,6 +39,13 @@ type options struct {
 func WithZipperAddr(addr string) Option {
 	return func(o *options) {
 		o.ZipperAddr = addr
+	}
+}
+
+// WithMeshConfigURL sets the initial edge-mesh config URL for the YoMo-Zipper.
+func WithMeshConfigURL(url string) Option {
+	return func(o *options) {
+		o.MeshConfigURL = url
 	}
 }
 

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/yomorun/yomo"
+	"github.com/yomorun/yomo/pkg/logger"
 )
 
 type noiseData struct {
@@ -37,7 +38,7 @@ func main() {
 	generateAndSendData(source)
 }
 
-func generateAndSendData(stream yomo.Source) {
+func generateAndSendData(source yomo.Source) {
 	for {
 		// generate random data.
 		data := noiseData{
@@ -46,13 +47,18 @@ func generateAndSendData(stream yomo.Source) {
 			From:  region,
 		}
 
-		// Encode data via Y3 codec https://github.com/yomorun/y3-codec.
-		sendingBuf, _ := json.Marshal(data)
+		sendingBuf, err := json.Marshal(&data)
+		if err != nil {
+			log.Fatalln(err)
+			os.Exit(-1)
+		}
 
 		// send data via QUIC stream.
-		_, err := stream.Write(sendingBuf)
+		_, err = source.Write(sendingBuf)
 		if err != nil {
-			log.Printf("❌ Emit %v to YoMo-Zipper failure with err: %v", data, err)
+			logger.Errorf("[source] ❌ Emit %v to YoMo-Zipper failure with err: %v", data, err)
+			time.Sleep(300 * time.Millisecond)
+			continue
 		} else {
 			log.Printf("✅ Emit %v to YoMo-Zipper", data)
 		}

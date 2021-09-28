@@ -30,7 +30,7 @@ type WorkflowConfig struct {
 	Workflow `yaml:",inline"`
 }
 
-// Load the WorkflowConfig by path.
+// LoadWorkflowConfig load the WorkflowConfig by path.
 func LoadWorkflowConfig(path string) (*WorkflowConfig, error) {
 	file, err := os.Open(path)
 	if err != nil {
