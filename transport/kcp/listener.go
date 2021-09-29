@@ -61,13 +61,9 @@ func (l *KcpListener) Listen(ctx context.Context, addr string) error {
 	if err := listener.SetDSCP(dscp); err != nil {
 		return err
 	}
-	// mac isn't supported
-	// if err := listener.SetReadBuffer(sockBuf); err != nil {
-	// 	return err
-	// }
-	// if err := listener.SetWriteBuffer(sockBuf); err != nil {
-	// 	return err
-	// }
+	if err := setListenerSocketBuf(listener); err != nil {
+		return err
+	}
 	l.Listener = listener
 
 	return nil
