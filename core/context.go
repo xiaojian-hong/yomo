@@ -14,16 +14,14 @@ import (
 type Context struct {
 	// ConnID is the connection ID of client.
 	ConnID string
+	// ClientType is the type of client.
+	ClientType ClientType
 	// Stream is the long-lived connection between client and server.
 	Stream io.ReadWriteCloser
 	// Frame receives from client.
 	Frame frame.Frame
 	// Keys store the key/value pairs in context.
 	Keys map[string]interface{}
-
-	// SendDataBack is the callback function when the zipper needs to send the data back to the client's connection.
-	// For example, the data needs to be sent back to the connections from WebSocket Bridge.
-	SendDataBack func(f frame.Frame) error
 
 	// OnClose is the callback function when the conn (or stream) is closed.
 	OnClose func(code uint64, msg string)

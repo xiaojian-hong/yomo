@@ -36,10 +36,10 @@ func NewWebSocketBridge(addr string) *WebSocketBridge {
 		},
 		Header: make(http.Header),
 	}
-	
+
 	// add mesh ID to header.
 	if meshID != "" {
-		conf.Header.Add("YoMo-Mesh-ID", meshID);
+		conf.Header.Add("YoMo-Mesh-ID", meshID)
 	}
 
 	return &WebSocketBridge{
@@ -77,9 +77,8 @@ func (ws *WebSocketBridge) ListenAndServe(handler func(ctx *core.Context)) error
 
 		// trigger the YoMo Server's Handler in bridge.
 		handler(&core.Context{
-			ConnID:       connID,
-			Stream:       c,
-			SendDataBack: ws.Send,
+			ConnID: connID,
+			Stream: c,
 			OnClose: func(code uint64, msg string) {
 				// remove this connection in room.
 				ws.conns.Delete(connID)

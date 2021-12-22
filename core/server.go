@@ -35,6 +35,7 @@ type Server struct {
 	router             Router
 	counterOfDataFrame int64
 	downstreams        map[string]*Client
+	bridges            []Bridge
 	mu                 sync.Mutex
 	opts               ServerOptions
 	beforeHandlers     []FrameHandler
@@ -47,6 +48,7 @@ func NewServer(name string, opts ...ServerOption) *Server {
 		name:        name,
 		connector:   newConnector(),
 		downstreams: make(map[string]*Client),
+		bridges:     make([]Bridge, 0),
 	}
 	s.Init(opts...)
 	once.Do(func() {
@@ -239,7 +241,12 @@ func (s *Server) mainFrameHandler(c *Context) error {
 	// 	s.handlePingFrame(mainStream, session, f.(*frame.PingFrame))
 	case frame.TagOfDataFrame:
 		s.handleDataFrame(c)
-		s.dispatchToDownstreams(c.Frame.(*frame.DataFrame))
+		s.dispatchToBridges(c.Frame.(*frame.DataFrame))
+
+		// prevent infinite dispatching
+		if c.ClientType != ClientTypeUpstreamZipper {
+			s.dispatchToDownstreams(c.Frame.(*frame.DataFrame))
+		}
 	default:
 		logger.Errorf("%serr=%v, frame=%v", ServerLogPrefix, err, c.Frame.Encode())
 	}
@@ -275,6 +282,8 @@ func (s *Server) handleHandshakeFrame(c *Context) error {
 
 	// client type
 	clientType := ClientType(f.ClientType)
+	c.ClientType = clientType
+
 	name := f.Name
 	stream := c.Stream
 	switch clientType {
@@ -425,9 +434,20 @@ func (s *Server) dispatchToDownstreams(df *frame.DataFrame) {
 
 // AddBridge add a bridge to this server.
 func (s *Server) AddBridge(bridge Bridge) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.bridges = append(s.bridges, bridge)
 	// serve bridge
 	go bridge.ListenAndServe(s.handleSession)
 	logger.Debugf("%sadd a bridge, name=[%s], addr=[%s]", ServerLogPrefix, bridge.Name(), bridge.Addr())
+}
+
+// dispatch every DataFrames to all bridges
+func (s *Server) dispatchToBridges(df *frame.DataFrame) {
+	for _, bridge := range s.bridges {
+		logger.Debugf("%sdispatching to [%s]: %# x", ServerLogPrefix, bridge.Name(), df.Tag())
+		bridge.Send(df)
+	}
 }
 
 // GetConnID get quic session connection id
