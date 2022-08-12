@@ -12,8 +12,6 @@ type Options struct {
 	Name string
 	// ModFile is the path to the module file.
 	ModFile string
-	// Arguments are the command line arguments.
-	Arguments []string
 	// Client credential
 	Credential string
 }

@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,9 +19,12 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/yomorun/cli/pkg/log"
 	"github.com/yomorun/cli/serverless"
 )
+
+var devViper *viper.Viper
 
 // devCmd represents the dev command
 var devCmd = &cobra.Command{
@@ -30,6 +33,9 @@ var devCmd = &cobra.Command{
 	Long:               "Dev a YoMo Stream Function with mocking yomo-source data from YCloud.",
 	FParseErrWhitelist: cobra.FParseErrWhitelist{UnknownFlags: true},
 	Run: func(cmd *cobra.Command, args []string) {
+		loadViperValue(cmd, devViper, &opts.Filename, "file-name")
+		loadViperValue(cmd, devViper, &opts.ModFile, "modfile")
+
 		if len(args) > 0 {
 			opts.Filename = args[0]
 		}
@@ -69,6 +75,7 @@ func init() {
 	rootCmd.AddCommand(devCmd)
 
 	devCmd.Flags().StringVarP(&opts.Filename, "file-name", "f", "app.go", "Stream function file")
-	devCmd.Flags().StringVarP(&opts.Name, "name", "n", "", "yomo stream function app name")
 	devCmd.Flags().StringVarP(&opts.ModFile, "modfile", "m", "", "custom go.mod")
+
+	devViper = bindViper(devCmd)
 }

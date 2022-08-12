@@ -23,7 +23,7 @@ go install github.com/yomorun/cli/yomo@latest
 
 ### 1. Source 应用程序(数据来源)
 #### 编写数据生产应用程序
-参见 [example/source/main.go](https://github.com/yomorun/cli/blob/main/example/source/main.go)
+参见 [example/source/main.go](example/source/main.go)
 
 #### 运行 Source 应用
 
@@ -41,25 +41,25 @@ yomo init [Name]
 #### 运行流处理函数
 
 ```shell
-yomo run --name [Name] app.go
+cd [Name] && yomo run
 ```
 生产环境
-```shell
-yomo run sl.yomo
+```sh
+cd [Name] && yomo build && ./sl.yomo
 ```
 
 ### 3. Stream Function (数据输出)
 #### 编写数据消费应用程序
-参见 [example/stream-fn-db/app.go](https://github.com/yomorun/cli/blob/main/example/stream-fn-db/app.go)
+参见 [example/stream-fn-db/app.go](example/stream-fn-db/app.go)
 
 #### 运行 Output Connector 应用
 
 ```shell
-yomo run --name [Name] app.go
+cd example/stream-fn-db && yomo run
 ```
 生产环境
-```shell
-yomo run sl.yomo
+```sh
+cd example/stream-fn-db && yomo build && ./sl.yomo
 ```
 
 ### 4. YoMo-Zipper 应用编排

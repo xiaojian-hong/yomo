@@ -28,7 +28,7 @@ env GOBIN=/bin go install github.com/yomorun/cli/yomo@latest
 
 #### Write a source app
 
-See [example/source/main.go](https://github.com/yomorun/cli/blob/main/example/source/main.go)
+See [example/source/main.go](example/source/main.go)
 
 #### Run
 
@@ -49,27 +49,27 @@ yomo init [Name]
 #### Run
 
 ```sh
-yomo run --name [Name] app.go
+cd [Name] && yomo run
 ```
 OR in Production
 ```sh
-yomo run sl.yomo
+cd [Name] && yomo build && ./sl.yomo
 ```
 
 ### 3. Stream Function to store data in DB
 
 #### Write a stream function
 
-See [example/stream-fn-db/app.go](https://github.com/yomorun/cli/blob/main/example/stream-fn-db/app.go)
+See [example/stream-fn-db/app.go](example/stream-fn-db/app.go)
 
 #### Run
 
 ```sh
-yomo run --name [Name] app.go
+cd example/stream-fn-db && yomo run
 ```
 OR in Production
 ```sh
-yomo run sl.yomo
+cd example/stream-fn-db && yomo build && ./sl.yomo
 ```
 
 ### 4. YoMo-Zipper

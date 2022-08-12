@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -52,10 +52,17 @@ var initCmd = &cobra.Command{
 			return
 		}
 
+		// create .env
+		fname = filepath.Join(name, ".env")
+		if err := file.PutContents(fname, []byte("YOMO_SFN_NAME=yomo-app-demo\n")); err != nil {
+			log.FailureStatusEvent(os.Stdout, "Write stream function .env file failure with the error: %v", err)
+			return
+		}
+
 		log.SuccessStatusEvent(os.Stdout, "Congratulations! You have initialized the stream function successfully.")
 		log.InfoStatusEvent(os.Stdout, "You can enjoy the YoMo Stream Function via the command: ")
-		log.InfoStatusEvent(os.Stdout, "\tDEV: \tyomo dev -n %s %s/app.go", "Noise", name)
-		log.InfoStatusEvent(os.Stdout, "\tPROD: \tFirst run source application, eg: go run example/source/main.go\r\n\t\tSecond: yomo run -n %s %s/app.go", name, name)
+		log.InfoStatusEvent(os.Stdout, "\tDEV: \tcd %s && yomo dev", name)
+		log.InfoStatusEvent(os.Stdout, "\tPROD: \tFirst run source application, eg: go run example/source/main.go\r\n\t\tSecond: cd %s && yomo run", name)
 	},
 }
 

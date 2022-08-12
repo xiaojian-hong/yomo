@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,9 +28,7 @@ import (
 	_ "github.com/yomorun/cli/serverless/js"
 )
 
-const (
-	runtimeWaitTimeoutInSeconds = 60
-)
+var runViper *viper.Viper
 
 // runCmd represents the run command
 var runCmd = &cobra.Command{
@@ -38,6 +36,17 @@ var runCmd = &cobra.Command{
 	Short: "Run a YoMo Stream Function",
 	Long:  "Run a YoMo Stream Function",
 	Run: func(cmd *cobra.Command, args []string) {
+		loadViperValue(cmd, runViper, &opts.Filename, "file-name")
+		loadViperValue(cmd, runViper, &url, "url")
+		loadViperValue(cmd, runViper, &opts.Name, "name")
+		loadViperValue(cmd, runViper, &opts.ModFile, "modfile")
+		loadViperValue(cmd, runViper, &opts.Credential, "credential")
+
+		if opts.Name == "" {
+			log.FailureStatusEvent(os.Stdout, "YoMo Stream Function name must be set.")
+			return
+		}
+
 		if len(args) > 0 {
 			opts.Filename = args[0]
 		}
@@ -100,11 +109,10 @@ func init() {
 	rootCmd.AddCommand(runCmd)
 
 	runCmd.Flags().StringVarP(&opts.Filename, "file-name", "f", "app.go", "Stream function file")
-	// runCmd.Flags().StringVarP(&opts.Lang, "lang", "l", "go", "source language")
 	runCmd.Flags().StringVarP(&url, "url", "u", "localhost:9000", "YoMo-Zipper endpoint addr")
 	runCmd.Flags().StringVarP(&opts.Name, "name", "n", "", "yomo stream function name. It should match the specific service name in YoMo-Zipper config (workflow.yaml)")
 	runCmd.Flags().StringVarP(&opts.ModFile, "modfile", "m", "", "custom go.mod")
-	// runCmd.MarkFlagRequired("name")
 	runCmd.Flags().StringVarP(&opts.Credential, "credential", "d", "", "client credential payload, eg: `token:dBbBiRE7`")
-	viper.BindPFlag("credential", runCmd.Flags().Lookup("credential"))
+
+	runViper = bindViper(runCmd)
 }

@@ -7,7 +7,6 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -17,7 +16,6 @@ import (
 
 	"golang.org/x/tools/imports"
 
-	"github.com/spf13/viper"
 	"github.com/yomorun/cli/pkg/file"
 	"github.com/yomorun/cli/pkg/log"
 	"github.com/yomorun/cli/serverless"
@@ -45,12 +43,11 @@ func (s *JsServerless) Init(opts *serverless.Options) error {
 	}
 
 	// append main function
-	credential := viper.GetString("credential")
 	ctx := Context{
 		Name:       s.opts.Name,
 		Host:       s.opts.Host,
 		Port:       s.opts.Port,
-		Credential: credential,
+		Credential: s.opts.Credential,
 	}
 
 	mainFuncTmpl := string(MainFuncRawBytesTmpl)
@@ -79,7 +76,7 @@ func (s *JsServerless) Init(opts *serverless.Options) error {
 		return fmt.Errorf("Init: generate code err %s", err)
 	}
 	// Create a temp folder.
-	tempDir, err := ioutil.TempDir("", "yomo_")
+	tempDir, err := os.MkdirTemp("", "yomo_")
 	if err != nil {
 		return err
 	}

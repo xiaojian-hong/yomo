@@ -6,8 +6,9 @@ require (
 	github.com/briandowns/spinner v1.19.0
 	github.com/dop251/goja v0.0.0-20220110113543-261677941f3c
 	github.com/fatih/color v1.13.0
-	github.com/mitchellh/go-homedir v1.1.0
+	github.com/joho/godotenv v1.4.0
 	github.com/spf13/cobra v1.5.0
+	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.12.0
 	github.com/yomorun/yomo v1.8.1
 	golang.org/x/tools v0.1.12
@@ -38,7 +39,6 @@ require (
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.4.0 // indirect
 	github.com/yomorun/y3 v1.0.5 // indirect
 	go.uber.org/atomic v1.9.0 // indirect

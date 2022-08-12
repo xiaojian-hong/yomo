@@ -139,7 +139,7 @@ type NoiseData struct {
 	Noise   float32   `json:"noise"` // Noise value
 	Time    int64     `json:"time"`  // Timestamp (ms)
 	From    string    `json:"from"`  // Source IP
-	Created time.Time `json:created`
+	Created time.Time `json:"created"`
 }
 
 type Yomo struct{}

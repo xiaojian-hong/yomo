@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,12 +24,25 @@ import (
 	"github.com/yomorun/cli/serverless"
 )
 
+var buildViper *viper.Viper
+
 // buildCmd represents the build command
 var buildCmd = &cobra.Command{
 	Use:   "build",
 	Short: "Build the YoMo Stream Function",
 	Long:  "Build the YoMo Stream Function as binary file",
 	Run: func(cmd *cobra.Command, args []string) {
+		loadViperValue(cmd, buildViper, &opts.Filename, "file-name")
+		loadViperValue(cmd, buildViper, &url, "url")
+		loadViperValue(cmd, buildViper, &opts.Name, "name")
+		loadViperValue(cmd, buildViper, &opts.ModFile, "modfile")
+		loadViperValue(cmd, buildViper, &opts.Credential, "credential")
+
+		if opts.Name == "" {
+			log.FailureStatusEvent(os.Stdout, "YoMo Stream Function name must be set.")
+			return
+		}
+
 		if len(args) > 0 {
 			opts.Filename = args[0]
 		}
@@ -67,8 +80,8 @@ func init() {
 	buildCmd.Flags().StringVarP(&opts.Filename, "file-name", "f", "app.go", "Stream function file (default is app.go)")
 	buildCmd.Flags().StringVarP(&url, "url", "u", "localhost:9000", "YoMo-Zipper endpoint addr")
 	buildCmd.Flags().StringVarP(&opts.Name, "name", "n", "", "yomo stream function app name (required). It should match the specific service name in YoMo-Zipper config (workflow.yaml)")
-	buildCmd.MarkFlagRequired("name")
 	buildCmd.Flags().StringVarP(&opts.ModFile, "modfile", "m", "", "custom go.mod")
 	buildCmd.Flags().StringVarP(&opts.Credential, "credential", "d", "", "client credential payload, eg: `token:dBbBiRE7`")
-	viper.BindPFlag("credential", buildCmd.Flags().Lookup("credential"))
+
+	buildViper = bindViper(buildCmd)
 }
