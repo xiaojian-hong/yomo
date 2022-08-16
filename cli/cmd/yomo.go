@@ -21,8 +21,8 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
-	"github.com/yomorun/cli/pkg/file"
-	"github.com/yomorun/cli/serverless"
+	"github.com/yomorun/yomo/cli/pkg/file"
+	"github.com/yomorun/yomo/cli/serverless"
 	"github.com/yomorun/yomo/pkg/logger"
 )
 

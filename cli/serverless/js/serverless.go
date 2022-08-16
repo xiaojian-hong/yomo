@@ -16,9 +16,9 @@ import (
 
 	"golang.org/x/tools/imports"
 
-	"github.com/yomorun/cli/pkg/file"
-	"github.com/yomorun/cli/pkg/log"
-	"github.com/yomorun/cli/serverless"
+	"github.com/yomorun/yomo/cli/pkg/file"
+	"github.com/yomorun/yomo/cli/pkg/log"
+	"github.com/yomorun/yomo/cli/serverless"
 )
 
 // JsServerless defines golang implementation of Serverless interface.

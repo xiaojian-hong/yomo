@@ -20,12 +20,12 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/yomorun/cli/pkg/file"
-	"github.com/yomorun/cli/pkg/log"
-	"github.com/yomorun/cli/serverless"
-	_ "github.com/yomorun/cli/serverless/exec"
-	_ "github.com/yomorun/cli/serverless/golang"
-	_ "github.com/yomorun/cli/serverless/js"
+	"github.com/yomorun/yomo/cli/pkg/file"
+	"github.com/yomorun/yomo/cli/pkg/log"
+	"github.com/yomorun/yomo/cli/serverless"
+	_ "github.com/yomorun/yomo/cli/serverless/exec"
+	_ "github.com/yomorun/yomo/cli/serverless/golang"
+	_ "github.com/yomorun/yomo/cli/serverless/js"
 )
 
 var runViper *viper.Viper

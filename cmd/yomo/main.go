@@ -15,9 +15,7 @@ limitations under the License.
 */
 package main
 
-import (
-	"github.com/yomorun/cli/cmd"
-)
+import "github.com/yomorun/yomo/cli/cmd"
 
 func main() {
 	cmd.Execute()

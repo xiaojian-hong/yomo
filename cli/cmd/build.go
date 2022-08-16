@@ -20,8 +20,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/yomorun/cli/pkg/log"
-	"github.com/yomorun/cli/serverless"
+	"github.com/yomorun/yomo/cli/pkg/log"
+	"github.com/yomorun/yomo/cli/serverless"
 )
 
 var buildViper *viper.Viper

@@ -20,9 +20,9 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/yomorun/cli/pkg/file"
-	"github.com/yomorun/cli/pkg/log"
-	"github.com/yomorun/cli/serverless/golang"
+	"github.com/yomorun/yomo/cli/pkg/file"
+	"github.com/yomorun/yomo/cli/pkg/log"
+	"github.com/yomorun/yomo/cli/serverless/golang"
 )
 
 var (

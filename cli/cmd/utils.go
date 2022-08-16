@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"github.com/yomorun/cli/serverless"
+	"github.com/yomorun/yomo/cli/serverless"
 )
 
 func parseURL(url string, opts *serverless.Options) error {

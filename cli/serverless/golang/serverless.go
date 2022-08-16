@@ -13,9 +13,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/yomorun/cli/pkg/file"
-	"github.com/yomorun/cli/pkg/log"
-	"github.com/yomorun/cli/serverless"
+	"github.com/yomorun/yomo/cli/pkg/file"
+	"github.com/yomorun/yomo/cli/pkg/log"
+	"github.com/yomorun/yomo/cli/serverless"
 	"golang.org/x/tools/go/ast/astutil"
 	"golang.org/x/tools/imports"
 )

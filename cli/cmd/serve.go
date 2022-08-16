@@ -21,8 +21,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/yomorun/cli/pkg/log"
 	"github.com/yomorun/yomo"
+	"github.com/yomorun/yomo/cli/pkg/log"
 )
 
 var meshConfURL string
