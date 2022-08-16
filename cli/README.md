@@ -13,13 +13,13 @@ Command-line tools for YoMo
 You can easily install the latest release globally by running:
 
 ```sh
-go install github.com/yomorun/cli/yomo@latest
+go install github.com/yomorun/yomo/cmd/yomo@latest
 ```
 
 Or you can install into another directory:
 
 ```sh
-env GOBIN=/bin go install github.com/yomorun/cli/yomo@latest
+env GOBIN=/bin go install github.com/yomorun/yomo/cmd/yomo@latest
 ```
 
 ## Getting Started
