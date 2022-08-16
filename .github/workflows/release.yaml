@@ -49,8 +49,8 @@ jobs:
       - name: lists artifacts
         run: ls -l ${{ env.ARTIFACT_DIR }}
       - name: Get version
-        id: vars
-        run: echo ::set-output name=version::$(cat ./VERSION)
+        id: tag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
       - name: publish binaries to github
         run: |
           echo "installing github-release-cli..."
@@ -67,7 +67,7 @@ jobs:
           echo "Uploading YoMo Binaries to GitHub Release"
           github-release upload \
             --owner $OWNER_NAME --repo $REPO_NAME \
-            --tag "${{ steps.vars.outputs.version }}" \
-            --name "${{ steps.vars.outputs.version }}" \
+            --tag "${{ steps.tag.outputs.tag }}" \
+            --name "${{ steps.tag.outputs.tag }}" \
             --prerelease true \
             ${RELEASE_ARTIFACT[*]}
