@@ -1,0 +1,22 @@
+
+// Serverless main function
+func main() {
+	sfn := yomo.NewStreamFunction(
+		"{{.Name}}",
+		yomo.WithZipperAddr("{{.Host}}:{{.Port}}"),
+		yomo.WithObserveDataTags(DataTags()...),
+        {{if .Credential -}}yomo.WithCredential("{{.Credential}}"),{{- end}}
+	)
+	defer sfn.Close()
+
+	// set handler
+	sfn.SetHandler(Handler)
+
+	// start
+	err := sfn.Connect()
+	if err != nil {
+		log.Print("[flow] connect err=%v", err)
+	}
+
+	select {}
+}
