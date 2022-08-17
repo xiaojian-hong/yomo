@@ -1,9 +1,9 @@
-name: release
+name: release-cli
 
 on:
   push:
     tags:
-      - v*
+      - cli*
   workflow_dispatch:
     inputs:
       logLevel:
@@ -26,7 +26,7 @@ jobs:
       - name: Run go mod tidy
         run: go mod tidy
       - name: build & archive binaries
-        run: make archive-release
+        run: make archive-release-cli
       - name: upload artifacts
         uses: actions/upload-artifact@master
         with:
@@ -48,9 +48,11 @@ jobs:
           path: ${{ env.ARTIFACT_DIR }}
       - name: lists artifacts
         run: ls -l ${{ env.ARTIFACT_DIR }}
+      - name: build version
+        run: make cli_version
       - name: Get version
         id: tag
-        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        run: echo ::set-output name=version::$(cat ./cli/VERSION)
       - name: publish binaries to github
         run: |
           echo "installing github-release-cli..."
@@ -67,7 +69,7 @@ jobs:
           echo "Uploading YoMo Binaries to GitHub Release"
           github-release upload \
             --owner $OWNER_NAME --repo $REPO_NAME \
-            --tag "${{ steps.tag.outputs.tag }}" \
-            --name "${{ steps.tag.outputs.tag }}" \
+            --tag "cli-${{ steps.tag.outputs.version }}" \
+            --name "CLI ${{ steps.tag.outputs.version }}" \
             --prerelease true \
             ${RELEASE_ARTIFACT[*]}
