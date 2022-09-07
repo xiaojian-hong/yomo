@@ -388,3 +388,19 @@ func (c *Client) SetCloseHandler(fn func()) {
 func (c *Client) ClientID() string {
 	return c.clientID
 }
+
+// OpenStream opens a stream.
+func (c *Client) OpenStream(ctx context.Context) (io.ReadWriteCloser, error) {
+	if c.conn == nil {
+		return nil, errors.New("c.conn is nil")
+	}
+	return c.conn.OpenStreamSync(ctx)
+}
+
+// AcceptStream returns the next stream opened by the server, blocking until one is available.
+func (c *Client) AcceptStream(ctx context.Context) (io.ReadWriteCloser, error) {
+	if c.conn == nil {
+		return nil, errors.New("c.conn is nil")
+	}
+	return c.conn.AcceptStream(ctx)
+}

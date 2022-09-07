@@ -22,6 +22,11 @@ const (
 	TagOfPayloadFrame  Type = 0x2E
 	TagOfBackflowFrame Type = 0x2D
 
+	// StreamFrame
+	TagOfStreamFrame    Type = 0x2C
+	TagOfStreamSinkTags Type = 0x01
+	TagOfStreamMetadata Type = 0x02
+
 	TagOfTokenFrame Type = 0x3E
 	// HandshakeFrame
 	TagOfHandshakeFrame           Type = 0x3D
@@ -85,6 +90,8 @@ func (f Type) String() string {
 		return "HandshakeName"
 	case TagOfHandshakeType:
 		return "HandshakeType"
+	case TagOfStreamFrame:
+		return "StreamFrame"
 	default:
 		return "UnknownFrame"
 	}

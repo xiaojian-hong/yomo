@@ -54,6 +54,8 @@ const (
 	ErrorCodeAfterHandler ErrorCode = 0xC4
 	// ErrorCodeHandshake handshake frame
 	ErrorCodeHandshake ErrorCode = 0xC5
+	// ErrorCodeStreamHandler stream handler
+	ErrorCodeStreamHandler ErrorCode = 0xC6
 	// ErrorCodeRejected server rejected
 	ErrorCodeRejected ErrorCode = 0xCC
 	// ErrorCodeGoaway goaway frame

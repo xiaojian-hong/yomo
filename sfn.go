@@ -2,6 +2,7 @@ package yomo
 
 import (
 	"context"
+	"io"
 
 	"github.com/yomorun/yomo/core"
 	"github.com/yomorun/yomo/core/frame"
@@ -22,6 +23,8 @@ type StreamFunction interface {
 	SetErrorHandler(fn func(err error))
 	// SetPipeHandler set the pipe handler function
 	SetPipeHandler(fn core.PipeHandler) error
+	// SetStreamHandler set the stream handler function
+	SetStreamHandler(fn core.StreamHandler) error
 	// Connect create a connection to the zipper
 	Connect() error
 	// Close will close the connection
@@ -54,6 +57,7 @@ type streamFunction struct {
 	observeDataTags []byte            // tag list that will be observed
 	fn              core.AsyncHandler // user's function which will be invoked when data arrived
 	pfn             core.PipeHandler
+	sfn             core.StreamHandler
 	pIn             chan []byte
 	pOut            chan *frame.PayloadFrame
 }
@@ -75,6 +79,13 @@ func (s *streamFunction) SetHandler(fn core.AsyncHandler) error {
 func (s *streamFunction) SetPipeHandler(fn core.PipeHandler) error {
 	s.pfn = fn
 	s.client.Logger().Debugf("%sSetHandler(%v)", streamFunctionLogPrefix, s.pfn)
+	return nil
+}
+
+// SetHandler set the handler function, which accept the raw bytes data and return the tag & response.
+func (s *streamFunction) SetStreamHandler(fn core.StreamHandler) error {
+	s.sfn = fn
+	s.client.Logger().Debugf("%sSetStreamHandler(%v)", streamFunctionLogPrefix, s.sfn)
 	return nil
 }
 
@@ -112,10 +123,41 @@ func (s *streamFunction) Connect() error {
 		}()
 	}
 
-	err := s.client.Connect(context.Background(), s.zipperEndpoint)
+	ctx := context.Background()
+	err := s.client.Connect(ctx, s.zipperEndpoint)
 	if err != nil {
 		s.client.Logger().Errorf("%sConnect() error: %s", streamFunctionLogPrefix, err)
 	}
+
+	// stream handler
+	if s.sfn != nil {
+		go func(ctx context.Context) {
+			for {
+				stream, err := s.client.AcceptStream(ctx)
+				if err != nil && err != io.EOF {
+					s.client.Logger().Debugf("%saccept stream error:%v", streamFunctionLogPrefix, err)
+					break
+				}
+
+				go func(ctx context.Context) {
+					out := s.sfn(stream)
+					if out != nil {
+						writer, err := s.client.OpenStream(ctx)
+						if err != nil {
+							s.client.Logger().Errorf("%sopen a new stream to write the stream error:%v", streamFunctionLogPrefix, err)
+							return
+						}
+						defer writer.Close()
+						_, err = io.Copy(writer, out)
+						if err != nil && err != io.EOF {
+							s.client.Logger().Errorf("%sout stream io.Copy error:%v", streamFunctionLogPrefix, err)
+						}
+					}
+				}(ctx)
+			}
+		}(ctx)
+	}
+
 	return err
 }
 

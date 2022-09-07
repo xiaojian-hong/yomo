@@ -152,14 +152,13 @@ func (s *Server) Serve(ctx context.Context, conn net.PacketConn) error {
 					logger.Printf("%s💔 [%s][%s](%s) close the connection: %v", ServerLogPrefix, name, clientID, connID, err)
 					break
 				}
-				defer stream.Close()
-
-				logger.Infof("%s❤️3/ [stream:%d] created, connID=%s", ServerLogPrefix, stream.StreamID(), connID)
-				// process frames on stream
-				c := newContext(conn, stream)
-				defer c.Clean()
-				s.handleConnection(c)
-				logger.Infof("%s❤️4/ [stream:%d] handleConnection DONE", ServerLogPrefix, stream.StreamID())
+				go func(st quic.Stream) {
+					logger.Infof("%s❤️3/ [stream:%d] created, connID=%s", ServerLogPrefix, st.StreamID(), connID)
+					// process frames on stream
+					c := newContext(conn, st)
+					s.handleConnection(c)
+					logger.Infof("%s❤️4/ [stream:%d] handleConnection DONE", ServerLogPrefix, st.StreamID())
+				}(stream)
 			}
 		}(sctx, conn)
 	}
@@ -186,6 +185,10 @@ func (s *Server) Close() error {
 // handle streams on a connection
 func (s *Server) handleConnection(c *Context) {
 	fs := NewFrameStream(c.Stream)
+
+	// indicates whether the connection is used for file/video streaming.
+	isStreaming := false
+
 	// check update for stream
 	for {
 		logger.Debugf("%shandleConnection 💚 waiting read next...", ServerLogPrefix)
@@ -233,12 +236,27 @@ func (s *Server) handleConnection(c *Context) {
 				return
 			}
 		}
-		// main handler
-		if err := s.mainFrameHandler(c); err != nil {
-			logger.Errorf("%smainFrameHandler err: %s", ServerLogPrefix, err)
-			c.CloseWithError(yerr.ErrorCodeMainHandler, err.Error())
-			return
+
+		if frameType == frame.TagOfStreamFrame {
+			isStreaming = true
+			// stream handler
+			go func() {
+				if err := s.handleStreamFrame(c); err != nil {
+					logger.Errorf("%s[ERR] handleStreamFrame err: %s", ServerLogPrefix, err)
+					c.CloseWithError(yerr.ErrorCodeStreamHandler, err.Error())
+				}
+			}()
+			break
+		} else {
+			// main handler
+			if err := s.mainFrameHandler(c); err != nil {
+				logger.Errorf("%smainFrameHandler err: %s", ServerLogPrefix, err)
+				c.CloseWithError(yerr.ErrorCodeMainHandler, err.Error())
+				c.Clean()
+				return
+			}
 		}
+
 		// after frame handler
 		for _, handler := range s.afterHandlers {
 			if err := handler(c); err != nil {
@@ -247,6 +265,15 @@ func (s *Server) handleConnection(c *Context) {
 				return
 			}
 		}
+	}
+
+	// if the connection is used for file/video streaming, we create a new stream for each file in the current connection.
+	// the stream will be closed when the file is transferred, but the connection should not be closed.
+	if !isStreaming {
+		if c.Stream != nil {
+			c.Stream.Close()
+		}
+		c.Clean()
 	}
 }
 
@@ -324,7 +351,8 @@ func (s *Server) handleHandshakeFrame(c *Context) error {
 		if err != nil {
 			return err
 		}
-		conn = newConnection(f.Name, f.ClientID, clientType, metadata, stream, f.ObserveDataTags)
+
+		conn = newConnection(f.Name, f.ClientID, clientType, metadata, stream, f.ObserveDataTags, c.Conn)
 
 		if clientType == ClientTypeStreamFunction {
 			// route
@@ -350,7 +378,7 @@ func (s *Server) handleHandshakeFrame(c *Context) error {
 			}
 		}
 	case ClientTypeUpstreamZipper:
-		conn = newConnection(f.Name, f.ClientID, clientType, nil, stream, f.ObserveDataTags)
+		conn = newConnection(f.Name, f.ClientID, clientType, nil, stream, f.ObserveDataTags, c.Conn)
 	default:
 		// unknown client type
 		s.connector.Remove(connID)
@@ -451,6 +479,89 @@ func (s *Server) handleBackflowFrame(c *Context) error {
 			}
 		}
 	}
+	return nil
+}
+
+// handleStreamFrame handles stream frame.
+func (s *Server) handleStreamFrame(c *Context) error {
+	fromID := c.ConnID()
+	from := s.connector.Get(fromID)
+	if from == nil {
+		logger.Warnf("%shandleStreamFrame connector cannot find %s", ServerLogPrefix, fromID)
+		return fmt.Errorf("handleStreamFrame connector cannot find %s", fromID)
+	}
+
+	f := c.Frame.(*frame.StreamFrame)
+	// route
+	route := s.router.Route(from.Metadata())
+	if route == nil {
+		logger.Warnf("%shandleStreamFrame route is nil", ServerLogPrefix)
+		return fmt.Errorf("handleStreamFrame route is nil")
+	}
+
+	// get sink connection ids from route
+	sinkTags := f.SinkTags()
+	sinkConnIDs := []string{}
+	for _, tag := range sinkTags {
+		connIDs := route.GetForwardRoutes(tag)
+		sinkConnIDs = append(sinkConnIDs, connIDs...)
+	}
+	if len(sinkConnIDs) == 0 {
+		logger.Warnf("%shandleStreamFrame no routes are found for tags %# x", ServerLogPrefix, sinkTags)
+		return fmt.Errorf("handleStreamFrame no routes are found for tags %# x", sinkTags)
+	}
+
+	// open new streams for each sink connection.
+	sinkStreams := []io.Writer{}
+	for _, toID := range sinkConnIDs {
+		conn := s.connector.Get(toID)
+		if conn == nil {
+			logger.Errorf("%sconn is nil: (%s)", ServerLogPrefix, toID)
+			continue
+		}
+
+		to := conn.Name()
+		logger.Debugf("%shandleStreamFrame from=[%s](%s), to=[%s](%s)", ServerLogPrefix, from.Name(), fromID, to, toID)
+
+		// open a new stream to sink.
+		qconn := conn.QUICConn()
+		if qconn == nil {
+			logger.Errorf("%sQUIC conn is nil: (%s)", ServerLogPrefix, toID)
+			continue
+		}
+		sinkStream, err := qconn.OpenStream()
+		if err != nil {
+			logger.Errorf("%sopen a stream in QUIC conn failed, from=[%s](%s), to=[%s](%s), %v", from.Name(), fromID, to, toID, err)
+		}
+
+		// write the stream frame with metadata to sink.
+		if _, err := sinkStream.Write(f.Encode()); err != nil {
+			logger.Warnf("%shandleStreamFrame stream.Write, from=[%s](%s), to=[%s](%s), %v", ServerLogPrefix, from.Name(), fromID, to, toID, err)
+			continue
+		}
+
+		// add to sink streams
+		sinkStreams = append(sinkStreams, sinkStream)
+	}
+
+	if len(sinkStreams) == 0 {
+		logger.Warnf("%shandleStreamFrame no sink streams are opened", ServerLogPrefix)
+		return fmt.Errorf("handleStreamFrame no sink streams are opened")
+	}
+
+	// pipe the source stream and sink streams
+	written, err := io.Copy(io.MultiWriter(sinkStreams...), c.Stream)
+	if err != nil && err != io.EOF {
+		logger.Warnf("%shandleStreamFrame io.Copy, from=[%s](%s), %v", ServerLogPrefix, from.Name(), fromID, err)
+	}
+	logger.Debugf("%shandleStreamFrame io.Copy, from=[%s](%s), written=%d", ServerLogPrefix, from.Name(), fromID, written)
+	// close the sink streams
+	for _, sinkStream := range sinkStreams {
+		if sinkStream != nil {
+			sinkStream.(io.Closer).Close()
+		}
+	}
+
 	return nil
 }
 

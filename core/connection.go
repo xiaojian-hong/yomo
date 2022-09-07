@@ -4,6 +4,7 @@ import (
 	"io"
 	"sync"
 
+	"github.com/lucas-clemente/quic-go"
 	"github.com/yomorun/yomo/core/frame"
 	"github.com/yomorun/yomo/pkg/logger"
 )
@@ -24,6 +25,8 @@ type Connection interface {
 	Write(f frame.Frame) error
 	// ObserveDataTags observed data tags
 	ObserveDataTags() []byte
+	// QUICConn gets the quic connection.
+	QUICConn() quic.Connection
 }
 
 type connection struct {
@@ -35,9 +38,10 @@ type connection struct {
 	observed   []byte // observed data tags
 	mu         sync.Mutex
 	closed     bool
+	qconn      quic.Connection // quic connection.
 }
 
-func newConnection(name string, clientID string, clientType ClientType, metadata Metadata, stream io.ReadWriteCloser, observed []byte) Connection {
+func newConnection(name string, clientID string, clientType ClientType, metadata Metadata, stream io.ReadWriteCloser, observed []byte, qconn quic.Connection) Connection {
 	return &connection{
 		name:       name,
 		clientID:   clientID,
@@ -46,6 +50,7 @@ func newConnection(name string, clientID string, clientType ClientType, metadata
 		metadata:   metadata,
 		stream:     stream,
 		closed:     false,
+		qconn:      qconn,
 	}
 }
 
@@ -96,4 +101,9 @@ func (c *connection) ObserveDataTags() []byte {
 // ClientID connection client ID
 func (c *connection) ClientID() string {
 	return c.clientID
+}
+
+// QUICConn gets the quic connection.
+func (c *connection) QUICConn() quic.Connection {
+	return c.qconn
 }

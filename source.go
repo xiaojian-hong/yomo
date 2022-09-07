@@ -2,6 +2,7 @@ package yomo
 
 import (
 	"context"
+	"io"
 
 	"github.com/yomorun/yomo/core"
 	"github.com/yomorun/yomo/core/frame"
@@ -29,6 +30,8 @@ type Source interface {
 	SetReceiveHandler(fn func(tag byte, data []byte))
 	// Write the data to all downstream
 	Broadcast(data []byte) error
+	// OpenStream will open a QUIC stream.
+	OpenStream(ctx context.Context) (io.ReadWriteCloser, error)
 }
 
 // YoMo-Source
@@ -124,4 +127,9 @@ func (s *yomoSource) Broadcast(data []byte) error {
 	s.client.Logger().Debugf("%sBroadcast: tid=%s, source_id=%s, data[%d]=%# x",
 		sourceLogPrefix, f.TransactionID(), f.SourceID(), len(data), frame.Shortly(data))
 	return s.client.WriteFrame(f)
+}
+
+// OpenStream will open a QUIC stream.
+func (s *yomoSource) OpenStream(ctx context.Context) (io.ReadWriteCloser, error) {
+	return s.client.OpenStream(ctx)
 }
