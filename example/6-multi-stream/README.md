@@ -1,12 +1,12 @@
 # Multiple streams example
 
-This example represents how [source](https://docs.yomo.run/source) pipe the local file stream to [zipper](https://docs.yomo.run/zipper), and then zipper pipe the stream to multiple [stream functions](https://docs.yomo.run/stream-fn).
+This example represents how [source](https://docs.yomo.run/source) pipe the local file stream to [zipper](https://docs.yomo.run/zipper), and zipper pipe the stream to multiple [stream functions](https://docs.yomo.run/stream-fn).
 
 ## Code structure
 
-+ `source`: Read the files in a local directory, create a new QUIC stream to pipe the file stream. [docs.yomo.run/source](https://docs.yomo.run/source)
-+ `zipper`: Receive the data from `source`, and pipe the stream to `stream-fn` [docs.yomo.run/zipper](https://docs.yomo.run/zipper)
-+ `sfn`: Receive the data from `zipper` and store the file in local via `io.copy`. [docs.yomo.run/stream-function](https://docs.yomo.run/stream-fn)
++ `source`: Read the files in a local directory, create a new QUIC stream for each file to pipe the file stream. [docs.yomo.run/source](https://docs.yomo.run/source)
++ `zipper`: Receive the data from `source`, create a new stream and pipe the `source` stream to `stream-fn` [docs.yomo.run/zipper](https://docs.yomo.run/zipper)
++ `sfn`: Receive the stream from `zipper` and store the file in local via `io.copy`. [docs.yomo.run/stream-function](https://docs.yomo.run/stream-fn)
 
 ## Prepare
 
@@ -87,7 +87,6 @@ The terminal of `sfn-1` will print the real-time noise value.
 2022-09-07 15:31:07.218	file: test1.mp4, md5: a6a87007a45e7d35846adb11c118ee1d
 2022-09-07 15:31:09.062	written: 434894207, /path/to/dir/sink-1-test2.mp4
 2022-09-07 15:31:09.062	file: test2.mp4, md5: 372148e7d1ba577914047a1ec4580dc9
-...
 ```
 
 The terminal of `sfn-2` will print the real-time noise value.

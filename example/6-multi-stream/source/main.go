@@ -42,7 +42,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	// PROBLEM: how to wait for connection established?
+	// PROBLEM: how to wait util the connection is established?
 	time.Sleep(time.Second)
 
 	// open files in dir

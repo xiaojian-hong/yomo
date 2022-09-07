@@ -2,6 +2,5 @@ name: Service
 host: localhost
 port: 9000
 functions:
-  - name: source
   - name: sink-1
   - name: sink-2

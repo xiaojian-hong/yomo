@@ -23,7 +23,7 @@ func main() {
 	if sfnName == "" {
 		sfnName = "sink-1"
 	}
-	// init yomo-source
+	// init yomo-sfn
 	client := yomo.NewStreamFunction(
 		sfnName,
 		yomo.WithZipperAddr("localhost:9000"),
@@ -49,6 +49,7 @@ type fileInfo struct {
 }
 
 func streamHandler(in io.Reader) io.Reader {
+	// get stream frame
 	streamFrame, err := core.ParseFrame(in)
 	if err != nil {
 		log.Println("read frame error:", err)
@@ -59,6 +60,7 @@ func streamHandler(in io.Reader) io.Reader {
 		return nil
 	}
 
+	// get file info from stream frame
 	var info fileInfo
 	err = json.Unmarshal(streamFrame.(*frame.StreamFrame).Metadata(), &info)
 	if err != nil {
@@ -89,7 +91,7 @@ func streamHandler(in io.Reader) io.Reader {
 	return nil
 }
 
-// calu;ateMD5 calculates the md5 of the file.
+// calculateMD5 calculates the md5 of the file.
 func calculateMD5(reader io.Reader, fileName string) {
 	h := md5.New()
 	if _, err := io.Copy(h, reader); err != nil {
