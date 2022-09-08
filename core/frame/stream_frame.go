@@ -4,14 +4,14 @@ import "github.com/yomorun/y3"
 
 // StreamFrame is a frame for stream.
 type StreamFrame struct {
-	sinkTags []byte
+	dataTags []byte
 	metadata []byte
 }
 
 // NewStreamFrame creates a new StreamFrame.
-func NewStreamFrame(sinkTags []byte) *StreamFrame {
+func NewStreamFrame(dataTags []byte) *StreamFrame {
 	return &StreamFrame{
-		sinkTags: sinkTags,
+		dataTags: dataTags,
 	}
 }
 
@@ -20,9 +20,9 @@ func (f *StreamFrame) Type() Type {
 	return TagOfStreamFrame
 }
 
-// SinkTags gets the sink tags of StreamFrame.
-func (f *StreamFrame) SinkTags() []byte {
-	return f.sinkTags
+// DataTags gets the data tags of StreamFrame.
+func (f *StreamFrame) DataTags() []byte {
+	return f.dataTags
 }
 
 // Metadata gets the metadata of StreamFrame.
@@ -38,10 +38,10 @@ func (f *StreamFrame) SetMetadata(metadata []byte) {
 // Encode to Y3 encoded bytes.
 func (f *StreamFrame) Encode() []byte {
 	stream := y3.NewNodePacketEncoder(byte(f.Type()))
-	// sink
-	sinkBlock := y3.NewPrimitivePacketEncoder(byte(TagOfStreamSinkTags))
-	sinkBlock.SetBytesValue(f.sinkTags)
-	stream.AddPrimitivePacket(sinkBlock)
+	// tags
+	tagsBlock := y3.NewPrimitivePacketEncoder(byte(TagOfStreamDataTags))
+	tagsBlock.SetBytesValue(f.dataTags)
+	stream.AddPrimitivePacket(tagsBlock)
 	// metadata
 	if f.metadata != nil {
 		metaBlock := y3.NewPrimitivePacketEncoder(byte(TagOfStreamMetadata))
@@ -62,8 +62,8 @@ func DecodeToStreamFrame(buf []byte) (*StreamFrame, error) {
 	stream := &StreamFrame{}
 	for k, v := range nodeBlock.PrimitivePackets {
 		switch k {
-		case byte(TagOfStreamSinkTags):
-			stream.sinkTags = v.ToBytes()
+		case byte(TagOfStreamDataTags):
+			stream.dataTags = v.ToBytes()
 			break
 		case byte(TagOfStreamMetadata):
 			stream.metadata = v.ToBytes()

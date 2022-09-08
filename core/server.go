@@ -499,21 +499,21 @@ func (s *Server) handleStreamFrame(c *Context) error {
 		return fmt.Errorf("handleStreamFrame route is nil")
 	}
 
-	// get sink connection ids from route
-	sinkTags := f.SinkTags()
-	sinkConnIDs := []string{}
-	for _, tag := range sinkTags {
+	// get sfn connection ids from route
+	dataTags := f.DataTags()
+	sfnConnIDs := []string{}
+	for _, tag := range dataTags {
 		connIDs := route.GetForwardRoutes(tag)
-		sinkConnIDs = append(sinkConnIDs, connIDs...)
+		sfnConnIDs = append(sfnConnIDs, connIDs...)
 	}
-	if len(sinkConnIDs) == 0 {
-		logger.Warnf("%shandleStreamFrame no routes are found for tags %# x", ServerLogPrefix, sinkTags)
-		return fmt.Errorf("handleStreamFrame no routes are found for tags %# x", sinkTags)
+	if len(sfnConnIDs) == 0 {
+		logger.Warnf("%shandleStreamFrame no routes are found for tags %# x", ServerLogPrefix, dataTags)
+		return fmt.Errorf("handleStreamFrame no routes are found for tags %# x", dataTags)
 	}
 
-	// open new streams for each sink connection.
-	sinkStreams := []io.Writer{}
-	for _, toID := range sinkConnIDs {
+	// open new streams for each sfn connection.
+	sfnStreams := []io.Writer{}
+	for _, toID := range sfnConnIDs {
 		conn := s.connector.Get(toID)
 		if conn == nil {
 			logger.Errorf("%sconn is nil: (%s)", ServerLogPrefix, toID)
@@ -523,42 +523,42 @@ func (s *Server) handleStreamFrame(c *Context) error {
 		to := conn.Name()
 		logger.Debugf("%shandleStreamFrame from=[%s](%s), to=[%s](%s)", ServerLogPrefix, from.Name(), fromID, to, toID)
 
-		// open a new stream to sink.
+		// open a new stream to sfn.
 		qconn := conn.QUICConn()
 		if qconn == nil {
 			logger.Errorf("%sQUIC conn is nil: (%s)", ServerLogPrefix, toID)
 			continue
 		}
-		sinkStream, err := qconn.OpenStream()
+		sfnStream, err := qconn.OpenStream()
 		if err != nil {
 			logger.Errorf("%sopen a stream in QUIC conn failed, from=[%s](%s), to=[%s](%s), %v", from.Name(), fromID, to, toID, err)
 		}
 
-		// write the stream frame with metadata to sink.
-		if _, err := sinkStream.Write(f.Encode()); err != nil {
+		// write the stream frame with metadata to sfn.
+		if _, err := sfnStream.Write(f.Encode()); err != nil {
 			logger.Warnf("%shandleStreamFrame stream.Write, from=[%s](%s), to=[%s](%s), %v", ServerLogPrefix, from.Name(), fromID, to, toID, err)
 			continue
 		}
 
-		// add to sink streams
-		sinkStreams = append(sinkStreams, sinkStream)
+		// add to sfn streams
+		sfnStreams = append(sfnStreams, sfnStream)
 	}
 
-	if len(sinkStreams) == 0 {
-		logger.Warnf("%shandleStreamFrame no sink streams are opened", ServerLogPrefix)
-		return fmt.Errorf("handleStreamFrame no sink streams are opened")
+	if len(sfnStreams) == 0 {
+		logger.Warnf("%shandleStreamFrame no sfn streams are opened", ServerLogPrefix)
+		return fmt.Errorf("handleStreamFrame no sfn streams are opened")
 	}
 
-	// pipe the source stream and sink streams
-	written, err := io.Copy(io.MultiWriter(sinkStreams...), c.Stream)
+	// pipe the source stream and sfn streams
+	written, err := io.Copy(io.MultiWriter(sfnStreams...), c.Stream)
 	if err != nil && err != io.EOF {
 		logger.Warnf("%shandleStreamFrame io.Copy, from=[%s](%s), %v", ServerLogPrefix, from.Name(), fromID, err)
 	}
 	logger.Debugf("%shandleStreamFrame io.Copy, from=[%s](%s), written=%d", ServerLogPrefix, from.Name(), fromID, written)
-	// close the sink streams
-	for _, sinkStream := range sinkStreams {
-		if sinkStream != nil {
-			sinkStream.(io.Closer).Close()
+	// close the sfn streams
+	for _, sfnStream := range sfnStreams {
+		if sfnStream != nil {
+			sfnStream.(io.Closer).Close()
 		}
 	}
 

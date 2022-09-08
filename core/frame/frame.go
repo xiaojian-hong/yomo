@@ -24,7 +24,7 @@ const (
 
 	// StreamFrame
 	TagOfStreamFrame    Type = 0x2C
-	TagOfStreamSinkTags Type = 0x01
+	TagOfStreamDataTags Type = 0x01
 	TagOfStreamMetadata Type = 0x02
 
 	TagOfTokenFrame Type = 0x3E
