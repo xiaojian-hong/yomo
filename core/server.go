@@ -491,7 +491,6 @@ func (s *Server) handleStreamFrame(c *Context) error {
 		return fmt.Errorf("handleStreamFrame connector cannot find %s", fromID)
 	}
 
-	f := c.Frame.(*frame.StreamFrame)
 	// route
 	route := s.router.Route(from.Metadata())
 	if route == nil {
@@ -500,6 +499,7 @@ func (s *Server) handleStreamFrame(c *Context) error {
 	}
 
 	// get sfn connection ids from route
+	f := c.Frame.(*frame.StreamFrame)
 	dataTags := f.DataTags()
 	sfnConnIDs := []string{}
 	for _, tag := range dataTags {

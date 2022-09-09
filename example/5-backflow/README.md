@@ -76,7 +76,7 @@ go run ./source/main.go
 
 ### Results
 
-The terminal of `yomo-srouce` will print the real-time receives value.
+The terminal of `yomo-source` will print the real-time receives value.
 
 ```bash
 2022-06-13 16:06:48.690 [source] ✅ Emit 158.30 to YoMo-Zipper

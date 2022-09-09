@@ -66,7 +66,7 @@ go run main.go /path/to/dir
 
 ### Results
 
-The terminal of `yomo-srouce` will print the real-time receives value.
+The terminal of `yomo-source` will print the file size and md5.
 
 ```bash
 
@@ -78,7 +78,7 @@ The terminal of `yomo-srouce` will print the real-time receives value.
 2022-09-07 15:31:09.027	file: test2.mp4, md5: 372148e7d1ba577914047a1ec4580dc9
 ```
 
-The terminal of `sfn-1` will print the real-time noise value.
+The terminal of `sfn-1` will print the receiving file's size and md5.
 
 ```bash
 2022-09-07 15:30:47.819	receiving file: test1.mp4
@@ -89,7 +89,7 @@ The terminal of `sfn-1` will print the real-time noise value.
 2022-09-07 15:31:09.062	file: test2.mp4, md5: 372148e7d1ba577914047a1ec4580dc9
 ```
 
-The terminal of `sfn-2` will print the real-time noise value.
+The terminal of `sfn-2` will will print the receiving file's size and md5.
 
 ```bash
 2022-09-07 15:30:47.820	receiving file: test1.mp4
