@@ -58,7 +58,7 @@ go run main.go sink-2
 
 ```bash
 cd ./source
-go run main.go /path/to/dir
+go run main.go /path/to/file
 
 2022-09-07 15:30:46.810	[core:client] use credential: [none]
 2022-09-07 15:30:46.815	[core:client] ❤️  [source][nrxQzDFtSAr6a5oPJRCSk]([::]:58333) is connected to YoMo-Zipper localhost:9000

@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 
 	"github.com/yomorun/yomo"
 	"github.com/yomorun/yomo/core"
@@ -14,6 +15,9 @@ import (
 )
 
 var sfnName string
+
+// where files are stored
+var dir string
 
 func main() {
 	if len(os.Args) < 2 {
@@ -23,10 +27,17 @@ func main() {
 	if sfnName == "" {
 		sfnName = "sink-1"
 	}
+
+	ex, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	dir = filepath.Dir(ex)
+
 	// init yomo-sfn
 	client := yomo.NewStreamFunction(
 		sfnName,
-		yomo.WithZipperAddr("localhost:9000"),
+		yomo.WithZipperAddr(os.Getenv("zipper")),
 		yomo.WithObserveDataTags(0x11),
 	)
 	defer client.Close()
@@ -35,7 +46,7 @@ func main() {
 	client.SetStreamHandler(streamHandler)
 
 	// connect to yomo-zipper
-	err := client.Connect()
+	err = client.Connect()
 	if err != nil {
 		panic(err)
 	}
@@ -45,7 +56,6 @@ func main() {
 
 type fileInfo struct {
 	Name string `json:"name"`
-	Dir  string `json:"dir"`
 }
 
 func streamHandler(in io.Reader) io.Reader {
@@ -76,7 +86,7 @@ func streamHandler(in io.Reader) io.Reader {
 	go calculateMD5(pipeReader, info.Name)
 
 	// create output file
-	p := path.Join(info.Dir, sfnName+"-"+info.Name)
+	p := path.Join(dir, sfnName+"-"+info.Name)
 	f, err := os.Create(p)
 	if err != nil {
 		panic(err)
@@ -88,6 +98,7 @@ func streamHandler(in io.Reader) io.Reader {
 	}
 	pipeWriter.Close()
 	log.Printf("written: %d, %s\n", written, p)
+	os.Exit(0)
 	return nil
 }
 
