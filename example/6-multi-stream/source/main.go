@@ -5,10 +5,9 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
-	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/yomorun/yomo"
@@ -17,16 +16,24 @@ import (
 
 type fileInfo struct {
 	Name string `json:"name"`
-	Dir  string `json:"dir"`
 }
 
 func main() {
 	if len(os.Args) < 2 {
 		panic("please set the dir in args, f.e. go run main.go /path/to/dir")
 	}
-	dir := os.Args[1]
-	if dir == "" {
-		panic("dir is empty")
+	fp, err := os.Open(os.Args[1])
+	if err != nil {
+		panic(err)
+	}
+
+	fi, err := fp.Stat()
+	if err != nil {
+		panic(err)
+	}
+
+	if fi.IsDir() {
+		panic("send files, not dir")
 	}
 
 	// init yomo-source
@@ -38,32 +45,21 @@ func main() {
 	defer client.Close()
 
 	// connect to yomo-zipper
-	err := client.Connect()
+	err = client.Connect()
 	if err != nil {
 		panic(err)
 	}
 	// PROBLEM: how to wait util the connection is established?
 	time.Sleep(time.Second)
 
-	// open files in dir
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		panic(err)
-	}
-
-	for _, file := range files {
-		go func(fileName string) {
-			sendFile(client, dir, fileName)
-		}(file.Name())
-	}
-
+	go sendFile(client, fp.Name())
 	select {}
 }
 
 // sendFile sends the file to yomo-zipper.
-func sendFile(client yomo.Source, dir string, fileName string) {
-	log.Printf("sending file %s to yomo-zipper...", fileName)
-	videoStream, err := os.Open(path.Join(dir, fileName))
+func sendFile(client yomo.Source, fileName string) {
+	log.Printf(">>>>>sending file %s to yomo-zipper...", fileName)
+	videoStream, err := os.Open(fileName)
 	if err != nil {
 		panic(err)
 	}
@@ -78,8 +74,7 @@ func sendFile(client yomo.Source, dir string, fileName string) {
 	// send a stream frame with file name
 	f := frame.NewStreamFrame([]byte{0x11})
 	info := fileInfo{
-		Name: fileName,
-		Dir:  dir,
+		Name: filepath.Base(fileName),
 	}
 	meta, _ := json.Marshal(info)
 	f.SetMetadata(meta)
