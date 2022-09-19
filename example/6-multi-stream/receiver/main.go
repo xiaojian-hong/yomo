@@ -6,8 +6,12 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/signal"
 	"path"
 	"path/filepath"
+	"strconv"
+	"syscall"
+	"time"
 
 	"github.com/yomorun/yomo"
 	"github.com/yomorun/yomo/core"
@@ -15,7 +19,6 @@ import (
 )
 
 var sfnName string
-var exit chan bool
 
 func main() {
 	if len(os.Args) < 2 {
@@ -32,7 +35,6 @@ func main() {
 		yomo.WithZipperAddr(os.Getenv("zipper")),
 		yomo.WithObserveDataTags(0x11),
 	)
-	defer client.Close()
 
 	// set stream handler (must set before connect)
 	client.SetStreamHandler(streamHandler)
@@ -43,9 +45,10 @@ func main() {
 		panic(err)
 	}
 
-	exit = make(chan bool)
+	quitChannel := make(chan os.Signal, 1)
+	signal.Notify(quitChannel, syscall.SIGINT, syscall.SIGTERM)
+	<-quitChannel
 
-	<-exit
 	client.Close()
 }
 
@@ -66,6 +69,7 @@ func streamHandler(in io.Reader) io.Reader {
 		log.Println("read frame error:", err)
 		return nil
 	}
+
 	if streamFrame.Type() != frame.TagOfStreamFrame {
 		log.Println("the frame type is not TagOfStreamFrame")
 		return nil
@@ -81,39 +85,43 @@ func streamHandler(in io.Reader) io.Reader {
 
 	log.Println("receiving file:", info.Name)
 
-	// calculate the md5 of the file
-	pipeReader, pipeWriter := io.Pipe()
-	defer pipeReader.Close()
-	defer pipeWriter.Close()
-
-	go calculateMD5(pipeReader, info.Name)
-
 	// create output file
-	p := path.Join(dir, sfnName+"-"+info.Name)
+	p := path.Join(dir, sfnName+"-"+strconv.Itoa(int(time.Now().Unix()))+"-"+info.Name)
 	f, err := os.Create(p)
 	if err != nil {
 		panic(err)
 	}
-	defer f.Close()
 
-	written, err := io.Copy(io.MultiWriter(pipeWriter, f), in)
+	written, err := io.Copy(f, in)
 	if err != nil && err != io.EOF {
-		panic(err)
+		if err == io.EOF {
+			log.Println(">>EOF")
+		} else {
+			panic(err)
+		}
 	}
-	pipeWriter.Close()
 	log.Printf("written: %d, %s\n", written, p)
 
-	// signal to exit
-	exit <- true
+	calculateMD5(p)
+
+	f.Close()
+
 	return nil
 }
 
 // calculateMD5 calculates the md5 of the file.
-func calculateMD5(reader io.Reader, fileName string) {
+func calculateMD5(fileName string) {
+	vs, err := os.Open(fileName)
+	if err != nil {
+		panic(err)
+	}
+	defer vs.Close()
+
 	h := md5.New()
-	if _, err := io.Copy(h, reader); err != nil {
+	if _, err := io.Copy(h, vs); err != nil {
 		log.Fatal(err)
 	}
 
 	log.Printf("file: %s, md5: %x\n", fileName, h.Sum(nil))
+	h.Reset()
 }

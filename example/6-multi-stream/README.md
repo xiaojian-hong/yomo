@@ -4,9 +4,9 @@ This example represents how [source](https://docs.yomo.run/source) pipe the loca
 
 ## Code structure
 
-+ `source`: Read the files in a local directory, create a new QUIC stream for each file to pipe the file stream. [docs.yomo.run/source](https://docs.yomo.run/source)
++ `sender`: Read the files in a local directory, create a new QUIC stream for each file to pipe the file stream. [docs.yomo.run/source](https://docs.yomo.run/source)
 + `zipper`: Receive the data from `source`, create a new stream and pipe the `source` stream to `stream-fn` [docs.yomo.run/zipper](https://docs.yomo.run/zipper)
-+ `sfn`: Receive the stream from `zipper` and store the file in local via `io.copy`. [docs.yomo.run/stream-function](https://docs.yomo.run/stream-fn)
++ `receiver`: Receive the stream from `zipper` and store the file in local via `io.copy`. [docs.yomo.run/stream-function](https://docs.yomo.run/stream-fn)
 
 ## Prepare
 
@@ -38,8 +38,7 @@ go run main.go
 ### Run [sfn-1](https://docs.yomo.run/stream-fn)
 
 ```bash
-cd ./sfn
-go run main.go sink-1
+zipper=localhost:9000 go run receiver/main.go sink-1
 
 2022-09-07 15:29:17.626	[core:client] use credential: [none]
 2022-09-07 15:29:17.632	[core:client] ❤️  [sink-1][jabXFp5WpHDin5o-mYaId]([::]:61242) is connected to YoMo-Zipper localhost:9000
@@ -47,8 +46,7 @@ go run main.go sink-1
 
 ### Run [sfn-2](https://docs.yomo.run/stream-fn)
 ```bash
-cd ./sfn
-go run main.go sink-2
+zipper=localhost:9000 go run receiver/main.go sink-2
 
 2022-09-07 15:29:51.884	[core:client] use credential: [none]
 2022-09-07 15:29:51.890	[core:client] ❤️  [sink-2][aJb-JKHYYytNq_V2JEJbF]([::]:62413) is connected to YoMo-Zipper localhost:9000
@@ -57,8 +55,7 @@ go run main.go sink-2
 ### Run [yomo-source](https://docs.yomo.run/source)
 
 ```bash
-cd ./source
-go run main.go /path/to/file
+zipper=localhost:9000 go run sender/main.go /path/to/file
 
 2022-09-07 15:30:46.810	[core:client] use credential: [none]
 2022-09-07 15:30:46.815	[core:client] ❤️  [source][nrxQzDFtSAr6a5oPJRCSk]([::]:58333) is connected to YoMo-Zipper localhost:9000

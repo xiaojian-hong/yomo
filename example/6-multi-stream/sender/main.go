@@ -61,6 +61,7 @@ func main() {
 	exit = make(chan bool)
 
 	<-exit
+	time.Sleep(5 * time.Second)
 	client.Close()
 }
 
@@ -93,25 +94,31 @@ func sendFile(client yomo.Source, fileName string) {
 		panic(err)
 	}
 
-	// calculate the md5 of the file
-	pipeReader, pipeWriter := io.Pipe()
-	defer pipeWriter.Close()
-	defer pipeReader.Close()
-	go calculateMD5(pipeReader, fileName)
+	// // calculate the md5 of the file
+	// pipeReader, pipeWriter := io.Pipe()
+	// defer pipeWriter.Close()
+	// go calculateMD5(pipeReader, fileName)
 
 	// send video stream to yomo-zipper
-	written, err := io.Copy(io.MultiWriter(pipeWriter, writer), videoStream)
+	// written, err := io.Copy(io.MultiWriter(pipeWriter, writer), videoStream)
+	written, err := io.Copy(writer, videoStream)
 	if err != nil && err != io.EOF {
 		panic(err)
 	}
 	log.Printf("file: %s, written: %d\n", fileName, written)
+	calculateMD5(fileName)
 	exit <- true
 }
 
 // calculateMD5 calculates the md5 of the file.
-func calculateMD5(reader io.Reader, fileName string) {
+func calculateMD5(fileName string) {
+	vs, err := os.Open(fileName)
+	if err != nil {
+		panic(err)
+	}
+	defer vs.Close()
 	h := md5.New()
-	if _, err := io.Copy(h, reader); err != nil {
+	if _, err := io.Copy(h, vs); err != nil {
 		if err != io.EOF {
 			log.Fatal(err)
 		}
