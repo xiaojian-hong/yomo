@@ -14,6 +14,8 @@ import (
 	"github.com/yomorun/yomo/core/frame"
 )
 
+var exit chan bool
+
 type fileInfo struct {
 	Name string `json:"name"`
 }
@@ -39,7 +41,7 @@ func main() {
 	// init yomo-source
 	client := yomo.NewSource(
 		"source",
-		yomo.WithZipperAddr("localhost:9000"),
+		yomo.WithZipperAddr(os.Getenv("zipper")),
 		yomo.WithObserveDataTags(0x10),
 	)
 	defer client.Close()
@@ -53,7 +55,11 @@ func main() {
 	time.Sleep(time.Second)
 
 	go sendFile(client, fp.Name())
-	select {}
+
+	exit = make(chan bool)
+
+	<-exit
+	client.Close()
 }
 
 // sendFile sends the file to yomo-zipper.
@@ -96,6 +102,7 @@ func sendFile(client yomo.Source, fileName string) {
 	writer.Close()
 	pipeWriter.Close()
 	videoStream.Close()
+	exit <- true
 }
 
 // calculateMD5 calculates the md5 of the file.

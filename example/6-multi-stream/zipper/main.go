@@ -8,7 +8,7 @@ func main() {
 	// zipper initialize
 	zipper := yomo.NewZipperWithOptions(
 		"Zipper",
-		yomo.WithZipperAddr("0.0.0.0:9000"),
+		yomo.WithZipperAddr("0.0.0.0:60000"),
 	)
 	defer zipper.Close()
 	// configurate zipper workflow

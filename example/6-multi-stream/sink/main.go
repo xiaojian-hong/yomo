@@ -19,6 +19,8 @@ var sfnName string
 // where files are stored
 var dir string
 
+var exit chan bool
+
 func main() {
 	if len(os.Args) < 2 {
 		panic("please set the sfn name in args, f.e. go run main.go sfn-1")
@@ -51,7 +53,10 @@ func main() {
 		panic(err)
 	}
 
-	select {}
+	exit = make(chan bool)
+
+	<-exit
+	client.Close()
 }
 
 type fileInfo struct {
@@ -98,7 +103,9 @@ func streamHandler(in io.Reader) io.Reader {
 	}
 	pipeWriter.Close()
 	log.Printf("written: %d, %s\n", written, p)
-	os.Exit(0)
+
+	// signal to exit
+	exit <- true
 	return nil
 }
 
