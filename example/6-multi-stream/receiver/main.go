@@ -93,7 +93,7 @@ func streamHandler(in io.Reader) io.Reader {
 	}
 
 	written, err := io.Copy(f, in)
-	if err != nil && err != io.EOF {
+	if err != nil {
 		if err == io.EOF {
 			log.Println(">>EOF")
 		} else {

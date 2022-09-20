@@ -32,33 +32,33 @@ cd ./zipper
 go run main.go
 
 2022-09-07 15:28:18.324	[yomo:zipper] Listening SIGUSR1, SIGUSR2, SIGTERM/SIGINT...
-2022-09-07 15:28:18.328	[core:server] ✅ [Zipper][17916] Listening on: 127.0.0.1:9000, MODE: DEVELOPMENT, QUIC: [v1 draft-29], AUTH: [none]
+2022-09-07 15:28:18.328	[core:server] ✅ [Zipper][17916] Listening on: 127.0.0.1:60000, MODE: DEVELOPMENT, QUIC: [v1 draft-29], AUTH: [none]
 ```
 
 ### Run [sfn-1](https://docs.yomo.run/stream-fn)
 
 ```bash
-zipper=localhost:9000 go run receiver/main.go sink-1
+zipper=localhost:60000 go run receiver/main.go sink-1
 
 2022-09-07 15:29:17.626	[core:client] use credential: [none]
-2022-09-07 15:29:17.632	[core:client] ❤️  [sink-1][jabXFp5WpHDin5o-mYaId]([::]:61242) is connected to YoMo-Zipper localhost:9000
+2022-09-07 15:29:17.632	[core:client] ❤️  [sink-1][jabXFp5WpHDin5o-mYaId]([::]:61242) is connected to YoMo-Zipper localhost:60000
 ```
 
 ### Run [sfn-2](https://docs.yomo.run/stream-fn)
 ```bash
-zipper=localhost:9000 go run receiver/main.go sink-2
+zipper=localhost:60000 go run receiver/main.go sink-2
 
 2022-09-07 15:29:51.884	[core:client] use credential: [none]
-2022-09-07 15:29:51.890	[core:client] ❤️  [sink-2][aJb-JKHYYytNq_V2JEJbF]([::]:62413) is connected to YoMo-Zipper localhost:9000
+2022-09-07 15:29:51.890	[core:client] ❤️  [sink-2][aJb-JKHYYytNq_V2JEJbF]([::]:62413) is connected to YoMo-Zipper localhost:60000
 ```
 
 ### Run [yomo-source](https://docs.yomo.run/source)
 
 ```bash
-zipper=localhost:9000 go run sender/main.go /path/to/file
+zipper=localhost:60000 go run sender/main.go /path/to/file
 
 2022-09-07 15:30:46.810	[core:client] use credential: [none]
-2022-09-07 15:30:46.815	[core:client] ❤️  [source][nrxQzDFtSAr6a5oPJRCSk]([::]:58333) is connected to YoMo-Zipper localhost:9000
+2022-09-07 15:30:46.815	[core:client] ❤️  [source][nrxQzDFtSAr6a5oPJRCSk]([::]:58333) is connected to YoMo-Zipper localhost:60000
 ```
 
 ### Results
